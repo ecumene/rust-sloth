@@ -5,5 +5,5 @@ authors = ["Mitchell Hynes <mitchell.hynes@ecumene.xyz>"]
 edition = "2018"
 
 [dependencies]
-rulinalg="0.4.2"
+nalgebra = "0.17"
 termion = "1"

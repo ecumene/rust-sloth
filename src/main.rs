@@ -2,33 +2,33 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::screen::*;
-use rulinalg::vector::Vector;
-use rulinalg::matrix::Matrix;
 use std::io::{Write, stdout, stdin};
 use std::{str, f32};
+
+use nalgebra::{Matrix4, Vector4};
 
 mod sloth;
 use sloth::Triangle;
 
-fn rot(x: f32, y: f32) -> Matrix<f32> {
-    Matrix::new(4, 4, vec![ x.cos(), 0.0, x.sin(), 0.0, 
+fn rot(x: f32, y: f32) -> Matrix4<f32> {
+    Matrix4::new(x.cos(), 0.0, x.sin(), 0.0, 
                             0.0,      y.cos(), -y.sin(),     0.0,
                             -x.sin(), y.sin(), x.cos()*y.cos(), 0.0,
-                            0.0,      0.0, 0.0,     1.0])
+                            0.0,      0.0, 0.0,     1.0)
 }
 
 fn main() {
     let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
 
     let mut triangle = Triangle {
-        v1: Vector::new(vec![0.0, 0.0, 0.0, 1.0]),
-        v2: Vector::new(vec![-40.0, 40.0, 40.0, 1.0]),
-        v3: Vector::new(vec![40.0, 40.0, 40.0, 1.0])
+        v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
+        v2: Vector4::new(-40.0, 40.0, 40.0, 1.0),
+        v3: Vector4::new(40.0, 40.0, 40.0, 1.0)
     };
-    let t = Matrix::new(4, 4, vec![1.0, 0.0, 0.0, 50.0, 
+    let t = Matrix4::new(1.0, 0.0, 0.0, 50.0, 
                             0.0, 1.0, 0.0, 0.0,
                             0.0, 0.0, 1.0, 0.0,
-                            0.0, 0.0, 0.0, 1.0]); // For whatever reason, transforming the rotation matrix with this breaks machine broke???
+                            0.0, 0.0, 0.0, 1.0); // For whatever reason, transforming the rotation Matrix4 with this breaks machine broke???
     let mut x:f32 = 0.0;
     let mut y:f32 = 0.0;
     loop {

@@ -1,17 +1,16 @@
-use rulinalg::vector::Vector;
-use rulinalg::matrix::Matrix;
+use nalgebra::{Matrix4, Vector4};
 
 const SHADES: [char; 6] = ['#', '*', '^', '\'', '`', ' '];
 
 // 2 3D points = Axis aligned bounding box
 pub struct AABB {
-    min: Vector<f32>,
-    max: Vector<f32>
+    min: Vector4<f32>,
+    max: Vector4<f32>
 }
 
 // Functions for the AABB
 impl AABB {
-    fn new(min: Vector<f32>, max: Vector<f32>) -> AABB {
+    fn new(min: Vector4<f32>, max: Vector4<f32>) -> AABB {
         AABB {
             min: min,
             max: max
@@ -21,9 +20,9 @@ impl AABB {
 
 // Three Points in 3D = Triangle
 pub struct Triangle {
-    pub v1: Vector<f32>,
-    pub v2: Vector<f32>,
-    pub v3: Vector<f32>
+    pub v1: Vector4<f32>,
+    pub v2: Vector4<f32>,
+    pub v3: Vector4<f32>
 }
 
 // Functions for Triangle Struct
@@ -31,8 +30,8 @@ impl Triangle {
     pub fn to_aabb(&self) -> AABB {
         // Forgive me for this brag, but this is the best thing I've written in rust
         AABB::new(
-            Vector::from_fn(3, |x| self.v1[x].min(self.v2[x].min(self.v3[x]))),
-            Vector::from_fn(3, |x| self.v1[x].max(self.v2[x].max(self.v3[x])))
+            Vector4::from_fn(|x, size| self.v1[x].min(self.v2[x].min(self.v3[x]))),
+            Vector4::from_fn(|x, size| self.v1[x].max(self.v2[x].max(self.v3[x])))
         )   
     }
     // This clones the triangle (Its points)
@@ -43,8 +42,8 @@ impl Triangle {
             v3: self.v3.clone()
         }
     }
-    // This mutates the triangle's points into a given matrix space
-    pub fn mul(&mut self, transform: Matrix<f32>) {
+    // This mutates the triangle's points into a given Matrix space
+    pub fn mul(&mut self, transform: Matrix4<f32>) {
         self.v1 = &transform*&self.v1;
         self.v2 = &transform*&self.v2;
         self.v3 = &transform*&self.v3;
@@ -68,11 +67,11 @@ pub fn to_char(shade: f32, shades: [char; 6]) -> char {
 }
 
 // Used in rasterization
-fn orient(a: &Vector<f32>, b: &Vector<f32>, c: &Vector<f32>) -> f32 {
+fn orient(a: &Vector4<f32>, b: &Vector4<f32>, c: &Vector4<f32>) -> f32 {
     (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0])
 }
 
-pub fn draw_triangle(frame_buffer: &mut Vec<u8>, z_buffer: &mut Vec<f32>, triangle: &Triangle, transform: Matrix<f32>, width: usize, height: usize) {
+pub fn draw_triangle(frame_buffer: &mut Vec<u8>, z_buffer: &mut Vec<f32>, triangle: &Triangle, transform: Matrix4<f32>, width: usize, height: usize) {
     let mut dist_triangle = triangle.clone();
     dist_triangle.mul(transform);
     // So we can just render what we need ( within bounds )
@@ -84,7 +83,7 @@ pub fn draw_triangle(frame_buffer: &mut Vec<u8>, z_buffer: &mut Vec<f32>, triang
     let a = 1.0 / orient(&dist_triangle.v1, &dist_triangle.v2, &dist_triangle.v3);
     for y in miny..maxy { // For Y in bounds
         for x in minx..maxx { // For X in bounds
-            let p = Vector::new(vec![x as f32, y as f32]);
+            let p = Vector4::new(x as f32, y as f32, 0.0, 0.0);
             let w0 = orient(&dist_triangle.v2, &dist_triangle.v3, &p);
             let w1 = orient(&dist_triangle.v3, &dist_triangle.v1, &p);
             let w2 = orient(&dist_triangle.v1, &dist_triangle.v2, &p);
