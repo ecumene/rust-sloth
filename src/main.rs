@@ -20,7 +20,7 @@ fn rot(x: f32, y: f32) -> Matrix4<f32> {
 fn main() {
     let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
 
-    let mut triangle = Triangle {
+    let triangle = Triangle {
         v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
         v2: Vector4::new(-10.0, 10.0, 10.0, 1.0),
         v3: Vector4::new(10.0, 10.0, 10.0, 1.0)

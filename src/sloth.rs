@@ -30,8 +30,8 @@ impl Triangle {
     pub fn to_aabb(&self) -> AABB {
         // Forgive me for this brag, but this is the best thing I've written in rust
         AABB::new(
-            Vector4::from_fn(|x, size| self.v1[x].min(self.v2[x].min(self.v3[x]))),
-            Vector4::from_fn(|x, size| self.v1[x].max(self.v2[x].max(self.v3[x])))
+            Vector4::from_fn(|x, _size| self.v1[x].min(self.v2[x].min(self.v3[x]))),
+            Vector4::from_fn(|x, _size| self.v1[x].max(self.v2[x].max(self.v3[x])))
         )   
     }
     // This clones the triangle (Its points)
