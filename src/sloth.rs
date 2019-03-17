@@ -1,4 +1,4 @@
-use nalgebra::{Matrix4, Vector4};
+use nalgebra::{Matrix4, Vector4, Unit};
 
 const SHADES: [char; 6] = ['#', '*', '^', '\'', '`', ' '];
 
@@ -48,6 +48,14 @@ impl Triangle {
         self.v2 = &transform*&self.v2;
         self.v3 = &transform*&self.v3;
     }
+    pub fn normal(&self) -> Unit<Vector4<f32>> {
+        let v1 = self.v2-self.v1;
+        let v2 = self.v3-self.v1;
+        let x = (v1[1]*v2[2]) - (v1[2]*v2[1]);
+        let y = (v1[2]*v2[0]) - (v1[0]*v2[2]);
+        let z = (v1[0]*v2[1]) - (v1[1]*v2[0]);
+        Unit::new_normalize(Vector4::new(x, y, z, 0.0))
+    }
 }
 
 pub fn to_char(shade: f32, shades: [char; 6]) -> char {
@@ -81,19 +89,21 @@ pub fn draw_triangle(frame_buffer: &mut Vec<u8>, z_buffer: &mut Vec<f32>, triang
     let maxx = aabb.max[0].min((width-1) as f32).floor() as usize;
     let maxy = aabb.max[1].min((height-1) as f32).floor() as usize;
     let a = 1.0 / orient(&dist_triangle.v1, &dist_triangle.v2, &dist_triangle.v3);
+    let light = Vector4::new(0.189, -0.283, 0.943, 0.0);
+    let shade = dist_triangle.normal().dot(&light) * a;
     for y in miny..maxy { // For Y in bounds
         for x in minx..maxx { // For X in bounds
             let p = Vector4::new(x as f32, y as f32, 0.0, 0.0);
             let w0 = orient(&dist_triangle.v2, &dist_triangle.v3, &p);
             let w1 = orient(&dist_triangle.v3, &dist_triangle.v1, &p);
             let w2 = orient(&dist_triangle.v1, &dist_triangle.v2, &p);
-            if w0>=0.0 && w1>=0.0 && w2 >=0.0 { // Does it past the test?
+            if w0 >= 0.0 && w1 >= 0.0 && w2 >=0.0 { // Does it past the test?
+                let pixel_shade = shade*(w0 + w1 + w2) * 0.9;
                 let z = &dist_triangle.v1[2] + a*(w1*(&dist_triangle.v2[2] - &dist_triangle.v1[2]) + w2*(&dist_triangle.v3[2] - &dist_triangle.v1[2]));
-                let shade = z/10.0;
                 let id = y*width + x;
                 if z < z_buffer[id] {
                     z_buffer[id] = z;
-                    frame_buffer[id] = to_char(shade, SHADES) as u8; // Sample the bytes -> Sample the shades with 10 thresholds
+                    frame_buffer[id] = to_char(pixel_shade, SHADES) as u8; // Sample the bytes -> Sample the shades with 10 thresholds
                 }
             }
         }
