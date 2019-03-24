@@ -19,29 +19,35 @@ fn main() {
         v3: Vector4::new(10.0, 10.0, 10.0, 1.0)
     };
     let persp = Perspective3::new(1.0, 3.14 / 4.0, 1.0, 10.0);
-    let persp = persp.as_matrix();
+    let persp = persp.as_matrix().clone(); // No more ref!
     let t = Matrix4::new(1.0, 0.0, 0.0, 10.0, 
                          0.0, 1.0, 0.0, 0.0,
                          0.0, 0.0, 1.0, 0.0,
                          0.0, 0.0, 0.0, 1.0);
     let mut x:f32 = 0.0; 
     let mut y:f32 = 0.0;
+    let mut context = Context {
+        utransform: persp,
+        width: 0,
+        height: 0,
+        frame_buffer: vec![],
+        z_buffer: vec![]
+    };
+
     loop {
         let rotx = Rotation3::from_axis_angle(&Vector3::y_axis(), x).to_homogeneous();
         let rotx1 = Rotation3::from_axis_angle(&Vector3::y_axis(), std::f32::consts::PI/2.0 + x).to_homogeneous();
         let rotx2 = Rotation3::from_axis_angle(&Vector3::y_axis(), std::f32::consts::PI + x).to_homogeneous();
         let rotx3 = Rotation3::from_axis_angle(&Vector3::y_axis(), 3.0*std::f32::consts::PI/2.0 + x).to_homogeneous();
         let size = termion::terminal_size().unwrap();
-        let mut frame_buffer = vec![0x0020u8; ((size.0-1)*(size.1-1)) as usize];
-        let mut z_buffer     = vec![f32::MAX; ((size.0-1)*(size.1-1)) as usize];
-        draw_triangle(&mut frame_buffer, &mut z_buffer, &triangle, persp*&t*&rotx, size.0 as usize, size.1 as usize);
-        draw_triangle(&mut frame_buffer, &mut z_buffer, &triangle, persp*&t*&rotx1, size.0 as usize, size.1 as usize);
-        draw_triangle(&mut frame_buffer, &mut z_buffer, &triangle, persp*&t*&rotx2, size.0 as usize, size.1 as usize);
-        draw_triangle(&mut frame_buffer, &mut z_buffer, &triangle, persp*&t*&rotx3, size.0 as usize, size.1 as usize);
-        match str::from_utf8(&frame_buffer) {
-            Ok(v) => println!("{}{}{}", termion::clear::All, termion::cursor::Goto(1,1), v),
-            Err(e) => panic!("Invalid UTF-8 shade chosen: {}", e),
-        };
+        context.width = (size.0) as usize;
+        context.height = (size.1-1) as usize;
+        context.clear();
+        draw_triangle(&mut context, &triangle, persp*&t*&rotx);
+        draw_triangle(&mut context, &triangle, persp*&t*&rotx1);
+        draw_triangle(&mut context, &triangle, persp*&t*&rotx2);
+        draw_triangle(&mut context, &triangle, persp*&t*&rotx3);
+        context.flush();
         stdout.flush().unwrap();
 
         let c = stdin().keys().next().unwrap();
