@@ -7,8 +7,8 @@ use std::{str, f32};
 
 use nalgebra::{Matrix4, Vector4, Perspective3};
 
-mod sloth;
-use sloth::Triangle;
+pub mod base;
+pub use base::*;
 
 fn rot(x: f32, y: f32) -> Matrix4<f32> {
     Matrix4::new(x.cos(), 0.0, x.sin(), 0.0, 
