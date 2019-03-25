@@ -40,7 +40,7 @@ pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matr
     let maxx = aabb.max[0].min((context.width-1) as f32).floor() as usize;
     let maxy = aabb.max[1].min((context.height-1) as f32).floor() as usize;
     let a = 1.0 / orient(&dist_triangle.v1, &dist_triangle.v2, &dist_triangle.v3);
-    let light = Vector4::new(0.189, -0.283, 0.943, 0.0);
+    let light = Vector4::new(0.1, -0.283, 0.943, 0.0);
     let shade = dist_triangle.normal().dot(&light) * a;
     for y in miny..maxy { // For Y in bounds
         for x in minx..maxx { // For X in bounds
@@ -49,7 +49,7 @@ pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matr
             let w1 = orient(&dist_triangle.v3, &dist_triangle.v1, &p);
             let w2 = orient(&dist_triangle.v1, &dist_triangle.v2, &p);
             if w0 >= 0.0 && w1 >= 0.0 && w2 >=0.0 { // Does it past the test?
-                let pixel_shade = shade*(w0 + w1 + w2) * 0.9;
+                let pixel_shade = shade*(w0 + w1 + w2);
                 let z = &dist_triangle.v1[2] + a*(w1*(&dist_triangle.v2[2] - &dist_triangle.v1[2]) + w2*(&dist_triangle.v3[2] - &dist_triangle.v1[2]));
                 let id = y*context.width + x;
                 if z < context.z_buffer[id] {

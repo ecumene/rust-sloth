@@ -1,5 +1,4 @@
-use nalgebra::{Matrix4, Vector4, Vector2, Unit};
-use termion::{color, style};
+use nalgebra::{Matrix4, Vector4, Unit};
 
 // 2 3D points = Axis aligned bounding box
 pub struct AABB {
@@ -55,10 +54,6 @@ impl Triangle {
         let z = (v1[0]*v2[1]) - (v1[1]*v2[0]);
         Unit::new_normalize(Vector4::new(x, y, z, 0.0))
     }
-}
-
-trait Material {
-    fn shader(&mut self, point: Vector2<f32>);
 }
 
 pub struct Mesh {
