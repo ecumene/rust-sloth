@@ -4,6 +4,7 @@ use termion::raw::IntoRawMode;
 use termion::screen::*;
 use std::io::{Write, stdout, stdin};
 use std::{str, f32};
+use std::path::Path;
 
 use nalgebra::{Matrix4, Vector4, Vector3, Perspective3, Rotation3};
 
@@ -13,7 +14,8 @@ pub use base::*;
 fn main() {
     let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
 
-    let mesh = Mesh {
+    let m = tobj::load_obj(&Path::new("triangle.obj"));
+    let mut mesh = SimpleMesh {
         triangles: vec![
             Triangle {
                 v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
@@ -37,12 +39,13 @@ fn main() {
             },
         ]
     };
+    mesh = m.unwrap().0[0].mesh.to_simple_mesh();
     let persp = Perspective3::new(1.0, 3.14 / 4.0, 1.0, 10.0);
     let persp = persp.as_matrix().clone(); // No more ref!
-    let t = Matrix4::new(10.0, 0.0,  0.0,  10.0, 
-                         0.0,  10.0, 0.0,  0.0,
-                         0.0,  0.0,  10.0, 0.0,
-                         0.0,  0.0,  0.0,  10.0);
+    let t = Matrix4::new(1.0,  0.0,  0.0,  20.0, 
+                         0.0,  1.0,  0.0,  0.0,
+                         0.0,  0.0,  1.0,  0.0,
+                         0.0,  0.0,  0.0,  1.0);
     let mut x:f32 = 0.0; 
     let mut y:f32 = 0.0;
     let mut context = Context {

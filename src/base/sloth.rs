@@ -1,5 +1,5 @@
 use nalgebra::{Matrix4, Vector4};
-use crate::base::{Triangle, Context, Mesh};
+use crate::base::{Triangle, Context, SimpleMesh};
 
 const SHADES: [char; 6] = ['#', '*', '^', '\'', '`', ' '];
 
@@ -24,7 +24,7 @@ fn orient(a: &Vector4<f32>, b: &Vector4<f32>, c: &Vector4<f32>) -> f32 {
     (b[0]-a[0])*(c[1]-a[1]) - (b[1]-a[1])*(c[0]-a[0])
 }
 
-pub fn draw_mesh(context: &mut Context, mesh: &Mesh, transform: Matrix4<f32>){
+pub fn draw_mesh(context: &mut Context, mesh: &SimpleMesh, transform: Matrix4<f32>){
     for triangle in &mesh.triangles {
         draw_triangle(context, &triangle, transform);
     }
