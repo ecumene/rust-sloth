@@ -32,13 +32,13 @@ pub fn draw_mesh(context: &mut Context, mesh: &SimpleMesh, transform: Matrix4<f3
 
 pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matrix4<f32>) {
     let mut dist_triangle = triangle.clone();
-    dist_triangle.mul(transform);
+    dist_triangle.mul(transform).mul(context.utransform);
     // So we can just render what we need ( within bounds )
     let aabb = dist_triangle.to_aabb();
-    let minx = aabb.min[0].max(0.0).floor() as usize;
-    let miny = aabb.min[1].max(0.0).floor() as usize;
-    let maxx = aabb.max[0].min((context.width-1) as f32).floor() as usize;
-    let maxy = aabb.max[1].min((context.height-1) as f32).floor() as usize;
+    let minx = aabb.min[0].max(1.0).ceil() as usize;
+    let miny = aabb.min[1].max(1.0).ceil() as usize;
+    let maxx = (aabb.max[0]*2.0).min((context.width-1) as f32).ceil() as usize;
+    let maxy = aabb.max[1].min((context.height-1) as f32).ceil() as usize;
     let a = 1.0 / orient(&dist_triangle.v1, &dist_triangle.v2, &dist_triangle.v3);
     let light = Vector4::new(0.1, -0.283, 0.943, 0.0);
     let shade = dist_triangle.normal().dot(&light) * a;
@@ -51,7 +51,7 @@ pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matr
             if w0 >= 0.0 && w1 >= 0.0 && w2 >=0.0 { // Does it past the test?
                 let pixel_shade = shade*(w0 + w1 + w2);
                 let z = &dist_triangle.v1[2] + a*(w1*(&dist_triangle.v2[2] - &dist_triangle.v1[2]) + w2*(&dist_triangle.v3[2] - &dist_triangle.v1[2]));
-                let id = y*context.width + x;
+                let id = y*context.width + (x*2);
                 if z < context.z_buffer[id] {
                     context.z_buffer[id] = z;
                     context.frame_buffer[id] = to_char(pixel_shade, SHADES) as u8; // Sample the bytes -> Sample the shades with 10 thresholds

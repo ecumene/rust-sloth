@@ -10,6 +10,18 @@ pub struct Context {
 }
 
 impl Context {
+    pub fn blank () -> Context {
+        Context {
+            utransform: Matrix4::new(1.0, 0.0, 0.0, 0.0,
+                                     0.0, 1.0, 0.0, 0.0,
+                                     0.0, 0.0, 1.0, 0.0,
+                                     0.0, 0.0, 0.0, 1.0),
+            width: 0,
+            height: 0,
+            frame_buffer: vec![],
+            z_buffer: vec![]
+        }
+    }
     pub fn clear (&mut self) {
         self.frame_buffer = vec![0x0020u8; self.width*self.height as usize];
         self.z_buffer     = vec![f32::MAX; self.width*self.height as usize];

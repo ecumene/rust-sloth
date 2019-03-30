@@ -12,56 +12,34 @@ pub mod base;
 pub use base::*;
 
 fn main() {
-    let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
-
-    let m = tobj::load_obj(&Path::new("triangle.obj"));
-    let mut mesh = SimpleMesh {
-        triangles: vec![
-            Triangle {
-                v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v2: Vector4::new(1.0, 1.0, 1.0, 1.0),
-                v3: Vector4::new(-1.0, 1.0, 1.0, 1.0)
-            },
-            Triangle {
-                v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v2: Vector4::new(-1.0, 1.0, 1.0, 1.0),
-                v3: Vector4::new(-1.0, 1.0, -1.0, 1.0)
-            },
-            Triangle {
-                v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v2: Vector4::new(-1.0, 1.0, -1.0, 1.0),
-                v3: Vector4::new(1.0, 1.0, -1.0, 1.0)
-            },
-            Triangle {
-                v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v2: Vector4::new(1.0, 1.0, -1.0, 1.0),
-                v3: Vector4::new(1.0, 1.0, 1.0, 1.0)
-            },
-        ]
-    };
-    mesh = m.unwrap().0[0].mesh.to_simple_mesh();
-    let persp = Perspective3::new(1.0, 3.14 / 4.0, 1.0, 10.0);
-    let persp = persp.as_matrix().clone(); // No more ref!
-    let t = Matrix4::new(1.0,  0.0,  0.0,  20.0, 
-                         0.0,  1.0,  0.0,  0.0,
-                         0.0,  0.0,  1.0,  0.0,
-                         0.0,  0.0,  0.0,  1.0);
+    let m = tobj::load_obj(&Path::new("icosphere.obj"));
+    let mesh = m.unwrap().0[0].mesh.to_simple_mesh();
     let mut x:f32 = 0.0; 
     let mut y:f32 = 0.0;
-    let mut context = Context {
-        utransform: persp,
-        width: 0,
-        height: 0,
-        frame_buffer: vec![],
-        z_buffer: vec![]
-    };
+    let mut context: Context = Context::blank();
+    let mut size: (u16, u16) = (0,0);
+    let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
     loop {
+        if size != termion::terminal_size().unwrap() {
+            size = termion::terminal_size().unwrap();
+            let scale = size.1 as f32 / 2.0;
+            let t = Matrix4::new(scale,   0.0,   0.0,  size.0 as f32/4.0, 
+                                  0.0,  scale,   0.0,  size.1 as f32/2.0,
+                                  0.0,   0.0,  scale,   0.0,
+                                  0.0,   0.0,   0.0,  5.0);
+            context = Context { 
+                utransform: t,
+                width: (size.0) as usize,
+                height: (size.1 - 1) as usize,
+                frame_buffer: vec![],
+                z_buffer: vec![]
+            };
+        }
         let rotx = Rotation3::from_axis_angle(&Vector3::y_axis(), x).to_homogeneous();
+        let roty = Rotation3::from_axis_angle(&Vector3::z_axis(), y).to_homogeneous();
         let size = termion::terminal_size().unwrap();
-        context.width = (size.0) as usize;
-        context.height = (size.1-1) as usize;
         context.clear();
-        draw_mesh(&mut context, &mesh, persp*&t*&rotx);
+        draw_mesh(&mut context, &mesh, &rotx*&roty);
         context.flush();
         stdout.flush().unwrap();
 
