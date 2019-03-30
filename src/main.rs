@@ -11,22 +11,31 @@ use nalgebra::{Matrix4, Vector4, Vector3, Perspective3, Rotation3};
 pub mod base;
 pub use base::*;
 
+fn to_meshes(models: Vec<tobj::Model>) -> Vec<SimpleMesh> {
+    let mut meshes: Vec<SimpleMesh> = vec![];
+    for model in models {
+        meshes.push(model.mesh.to_simple_mesh());
+    }
+    meshes
+}
+
 fn main() {
-    let m = tobj::load_obj(&Path::new("icosphere.obj"));
-    let mesh = m.unwrap().0[0].mesh.to_simple_mesh();
+    let mut mesh_queue: Vec<SimpleMesh> = vec![];
+    &mesh_queue.append(&mut to_meshes(tobj::load_obj(&Path::new("icosphere.obj")).unwrap().0));
     let mut x:f32 = 0.0; 
     let mut y:f32 = 0.0;
     let mut context: Context = Context::blank();
     let mut size: (u16, u16) = (0,0);
     let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap());
     loop {
-        if size != termion::terminal_size().unwrap() {
-            size = termion::terminal_size().unwrap();
-            let scale = size.1 as f32 / 2.0;
-            let t = Matrix4::new(scale,   0.0,   0.0,  size.0 as f32/4.0, 
-                                  0.0,  scale,   0.0,  size.1 as f32/2.0,
-                                  0.0,   0.0,  scale,   0.0,
-                                  0.0,   0.0,   0.0,  5.0);
+        let terminal_size = termion::terminal_size().unwrap(); 
+        if size != terminal_size {
+            size = terminal_size;
+            let scale = size.1 as f32 / 3.0;
+            let t = Matrix4::new(scale,   0.0,    0.0, size.0 as f32/4.0, 
+                                  0.0,  -scale,   0.0, size.1 as f32/2.0,
+                                  0.0,    0.0,  scale,               0.0,
+                                  0.0,    0.0,    0.0,               5.0);
             context = Context { 
                 utransform: t,
                 width: (size.0) as usize,
@@ -37,9 +46,10 @@ fn main() {
         }
         let rotx = Rotation3::from_axis_angle(&Vector3::y_axis(), x).to_homogeneous();
         let roty = Rotation3::from_axis_angle(&Vector3::z_axis(), y).to_homogeneous();
-        let size = termion::terminal_size().unwrap();
         context.clear();
-        draw_mesh(&mut context, &mesh, &rotx*&roty);
+        for mesh in &mesh_queue {
+            draw_mesh(&mut context, &mesh, &rotx*&roty);
+        }
         context.flush();
         stdout.flush().unwrap();
 
