@@ -35,10 +35,11 @@ impl Triangle {
         )   
     }
     // This mutates the triangle's points into a given Matrix space
-    pub fn mul(&mut self, transform: Matrix4<f32>) {
+    pub fn mul(&mut self, transform: Matrix4<f32>) -> &mut Triangle {
         self.v1 = &transform*&self.v1;
         self.v2 = &transform*&self.v2;
         self.v3 = &transform*&self.v3;
+        self
     }
     pub fn normal(&self) -> Unit<Vector4<f32>> {
         let v1 = self.v2-self.v1;
