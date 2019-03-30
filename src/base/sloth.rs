@@ -5,15 +5,15 @@ const SHADES: [char; 6] = ['#', '*', '^', '\'', '`', ' '];
 
 pub fn to_char(shade: f32, shades: [char; 6]) -> char {
     if shade <= 0.20 {
-        shades[0]
+        shades[4]
     } else if shade <= 0.40 {
-        shades[1]
+        shades[3]
     } else if shade <= 0.60 {
         shades[2]
     } else if shade <= 0.80 {
-        shades[3]
+        shades[1]
     } else if shade <= 1.0 {
-        shades[4]
+        shades[0]
     } else {
         shades[5]
     }
@@ -51,7 +51,7 @@ pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matr
             if w0 >= 0.0 && w1 >= 0.0 && w2 >=0.0 { // Does it past the test?
                 let pixel_shade = shade*(w0 + w1 + w2);
                 let z = &dist_triangle.v1[2] + a*(w1*(&dist_triangle.v2[2] - &dist_triangle.v1[2]) + w2*(&dist_triangle.v3[2] - &dist_triangle.v1[2]));
-                let id = y*context.width + (x*2);
+                let id = y * context.width + x * 2;
                 if z < context.z_buffer[id] {
                     context.z_buffer[id] = z;
                     context.frame_buffer[id] = to_char(pixel_shade, SHADES) as u8; // Sample the bytes -> Sample the shades with 10 thresholds
