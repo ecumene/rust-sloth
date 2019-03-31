@@ -3,10 +3,10 @@ use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::screen::*;
 use std::io::{Write, stdout, stdin};
-use std::{str, f32};
+use std::{f32};
 use std::path::Path;
 
-use nalgebra::{Matrix4, Vector4, Vector3, Perspective3, Rotation3};
+use nalgebra::{Matrix4, Vector3, Rotation3};
 
 pub mod base;
 pub use base::*;
