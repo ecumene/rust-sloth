@@ -1,7 +1,7 @@
 pub mod geometry;
 pub mod context;
-pub mod sloth;
+pub mod rasterizer;
 
 pub use self::geometry::*;
 pub use self::context::*;
-pub use self::sloth::*; 
+pub use self::rasterizer::*; 
