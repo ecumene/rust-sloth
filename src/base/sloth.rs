@@ -40,8 +40,7 @@ pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matr
     let maxx = (aabb.max[0]*2.0).min((context.width-1) as f32).ceil() as usize;
     let maxy = aabb.max[1].min((context.height-1) as f32).ceil() as usize;
     let a = 1.0 / orient(&dist_triangle.v1, &dist_triangle.v2, &dist_triangle.v3);
-    let light = Vector4::new(0.1, -0.283, 0.943, 0.0);
-    let shade = dist_triangle.normal().dot(&light) * a;
+    let shade = dist_triangle.normal().z * a;
     for y in miny..maxy { // For Y in bounds
         for x in minx..maxx { // For X in bounds
             let p = Vector4::new(x as f32, y as f32, 0.0, 0.0);
