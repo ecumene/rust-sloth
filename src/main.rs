@@ -72,23 +72,10 @@ fn update_context(
                 .max(mesh.bounding_box.max.z);
         }
         scale = f32::from(old_size.1).min(f32::from(old_size.0) / 2.0) / scale / 2.0; // Constrain to width and height, whichever is smaller
-        let t = Matrix4::new(
-            scale,
-            0.0,
-            0.0,
-            f32::from(old_size.0) / 4.0, // X translation is divided by 4 because there's a 1 char space between charxels
-            0.0,
-            -scale,
-            0.0,
-            f32::from(old_size.1), // Y translation is divided by 2 to center
-            0.0,
-            0.0,
-            scale,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            1.0,
+        let t = Matrix4::new(scale,    0.0,   0.0, f32::from(old_size.0) / 4.0, // X translation is divided by 4 because there's a 1 char space between charxels
+                               0.0, -scale,   0.0, f32::from(old_size.1) / 2.0, // Y translation is divided by 2 to center
+                               0.0,    0.0, scale,                         0.0,
+                               0.0,    0.0,   0.0,                         1.0,
         );
         Context {
             utransform: t,
