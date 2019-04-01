@@ -1,5 +1,5 @@
 [package]
-name = "slothgl"
+name = "sloth"
 version = "0.1.0"
 authors = ["Mitchell Hynes <mitchell.hynes@ecumene.xyz>"]
 edition = "2018"

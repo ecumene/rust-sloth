@@ -72,11 +72,11 @@ pub struct SimpleMesh {
 
 impl ToSimpleMesh for Mesh {
     fn to_simple_mesh(&self) -> SimpleMesh {
-        let mut bounding_box = AABB {
+        let mut bounding_box = AABB { // This is the general bounding box for the mesh
             min: Vector4::new(0.0,0.0,0.0,1.0),
             max: Vector4::new(0.0,0.0,0.0,1.0)
         };
-        let mut triangles = vec![Triangle {
+        let mut triangles = vec![Triangle { // Repeat this triangle for all faces in polygon
             v1: Vector4::new(0.0,0.0,0.0,1.0), 
             v2: Vector4::new(0.0,0.0,0.0,1.0),
             v3: Vector4::new(0.0,0.0,0.0,1.0)
@@ -92,7 +92,7 @@ impl ToSimpleMesh for Mesh {
             triangles[x].v3.y = self.positions[(self.indices[x*3 + 2]*3 + 1) as usize];
             triangles[x].v3.z = self.positions[(self.indices[x*3 + 2]*3 + 2) as usize];
 
-            let aabb = triangles[x].to_aabb();
+            let aabb = triangles[x].to_aabb(); // Compare this triangles aabb to the mesh's aabb
             bounding_box.min.x = aabb.min.x.min(bounding_box.min.x);
             bounding_box.min.y = aabb.min.y.min(bounding_box.min.y);
             bounding_box.min.z = aabb.min.z.min(bounding_box.min.z);

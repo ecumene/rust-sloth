@@ -1,6 +1,8 @@
-# SlothGL
-A WIP 3D software rasterizer... for the terminal!  
-I hope some day it will be as simple as  
-`cat test.obj | sloth`  
-Someday... But here's what I've got now:  
-http://recordit.co/5o1cp18AxG
+# Sloth
+![](preview.gif)
+A one-of-a-kind command line 3D software rasterizer made with termion, tobj, and nalgebra. Currently it 
+supports OBJ file formats without textures or materials. Here's a really simple command for you to get started.    
+`cargo build --release`    
+`./target/release/sloth -r "0 0 90" hand.obj`    
+For multiple models:   
+`./target/release/sloth -r "0 0 90" "suzy.obj hand.obj"`   
