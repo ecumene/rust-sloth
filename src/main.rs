@@ -12,10 +12,10 @@ use nalgebra::{Matrix4, Rotation3};
 pub mod base;
 pub use base::*;
 
-fn to_meshes(models: Vec<tobj::Model>) -> Vec<SimpleMesh> {
+fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<SimpleMesh> {
     let mut meshes: Vec<SimpleMesh> = vec![];
     for model in models {
-        meshes.push(model.mesh.to_simple_mesh());
+        meshes.push(model.mesh.to_simple_mesh_with_materials(&materials));
     }
     meshes
 }
@@ -94,7 +94,8 @@ fn main() {
     let mut mesh_queue: Vec<SimpleMesh> = vec![];   // A list of meshes to render
     for slice in matches.value_of("OBJ INPUT").unwrap().split(' ') {
         // Fill list with file inputs (Splits for spaces -> multiple files)
-        mesh_queue.append(&mut to_meshes(tobj::load_obj(&Path::new(slice)).unwrap().0));
+        let present = tobj::load_obj(&Path::new(slice)).unwrap();
+        mesh_queue.append(&mut to_meshes(present.0, present.1));
     }
     let mut speed: f32 = 1.0;               // Default speed for the x-axis spinning
     let mut turntable = (0.0, 0.0, 0.0);    // Euler rotation variables, quaternions aren't very user friendly
