@@ -65,6 +65,7 @@ pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matr
                 if z < context.z_buffer[id] {
                     context.z_buffer[id] = z;
                     let pixel = format!("{}{}{}{}", 
+                        color::Bg(color::Rgb(20,20,20)), 
                         color::Fg(color::Rgb(dist_triangle.color.0, dist_triangle.color.1, dist_triangle.color.2)), 
                         to_char(pixel_shade, SHADES).to_string(),
                         color::Fg(color::Reset));
