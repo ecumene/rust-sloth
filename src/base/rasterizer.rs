@@ -1,4 +1,5 @@
 use crate::base::{Context, SimpleMesh, Triangle};
+use termion::{color};
 use nalgebra::{Matrix4, Vector4};
 
 const SHADES: [char; 6] = ['#', '*', '^', '\'', '`', ' '];
@@ -63,7 +64,12 @@ pub fn draw_triangle(context: &mut Context, triangle: &Triangle, transform: Matr
                 let id = y * context.width + x * 2;
                 if z < context.z_buffer[id] {
                     context.z_buffer[id] = z;
-                    context.frame_buffer[id] = to_char(pixel_shade, SHADES) as u8; // Sample the bytes -> Sample the shades with 10 thresholds
+                    let pixel = format!("{}{}{}{}", 
+                        color::Fg(color::Rgb(dist_triangle.color.0, dist_triangle.color.1, dist_triangle.color.2)), 
+                        to_char(pixel_shade, SHADES).to_string(),
+                        color::Fg(color::Reset));
+                    context.frame_buffer[id] = (&pixel).to_string();
+                    context.frame_buffer[id+1] = (&pixel).to_string();
                 }
             }
         }
