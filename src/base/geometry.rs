@@ -1,6 +1,6 @@
 use nalgebra::{Matrix4, Unit, Vector4};
 use std::clone::Clone;
-use tobj::Mesh;
+use tobj::{Mesh, Material};
 
 // 2 3D points = Axis aligned bounding box
 pub struct AABB {
@@ -17,6 +17,7 @@ impl AABB {
 
 // Three Points in 3D = Triangle
 pub struct Triangle {
+    pub color: (u8,u8,u8),
     pub v1: Vector4<f32>,
     pub v2: Vector4<f32>,
     pub v3: Vector4<f32>,
@@ -51,6 +52,7 @@ impl Triangle {
 impl Clone for Triangle {
     fn clone(&self) -> Triangle {
         Triangle {
+            color: self.color,
             v1: self.v1,
             v2: self.v2,
             v3: self.v3,
@@ -62,13 +64,17 @@ pub trait ToSimpleMesh {
     fn to_simple_mesh(&self) -> SimpleMesh;
 }
 
+pub trait ToSimpleMeshWithMaterial {
+    fn to_simple_mesh_with_materials(&self, materials: &Vec<Material>) -> SimpleMesh;
+}
+
 pub struct SimpleMesh {
     pub bounding_box: AABB,
     pub triangles: Vec<Triangle>,
 }
 
-impl ToSimpleMesh for Mesh {
-    fn to_simple_mesh(&self) -> SimpleMesh {
+impl ToSimpleMeshWithMaterial for Mesh {
+    fn to_simple_mesh_with_materials(&self, materials: &Vec<Material>) -> SimpleMesh {
         let mut bounding_box = AABB {
             // This is the general bounding box for the mesh
             min: Vector4::new(0.0, 0.0, 0.0, 1.0),
@@ -77,6 +83,7 @@ impl ToSimpleMesh for Mesh {
         let mut triangles = vec![
             Triangle {
                 // Repeat this triangle for all faces in polygon
+                color: (1, 1, 1),
                 v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
                 v2: Vector4::new(0.0, 0.0, 0.0, 1.0),
                 v3: Vector4::new(0.0, 0.0, 0.0, 1.0)
@@ -94,6 +101,11 @@ impl ToSimpleMesh for Mesh {
             tri.v3.y = self.positions[(self.indices[x * 3 + 2] * 3 + 1) as usize];
             tri.v3.z = self.positions[(self.indices[x * 3 + 2] * 3 + 2) as usize];
 
+            if materials.len() > 0 {
+                let material = &materials[*&self.material_id.unwrap()];
+                tri.color = ((material.diffuse[0] * 255.0) as u8, (material.diffuse[1] * 255.0) as u8, (material.diffuse[2] * 255.0) as u8);
+            }
+
             let aabb = tri.to_aabb(); // Compare this triangles aabb to the mesh's aabb
             bounding_box.min.x = aabb.min.x.min(bounding_box.min.x);
             bounding_box.min.y = aabb.min.y.min(bounding_box.min.y);
@@ -106,5 +118,11 @@ impl ToSimpleMesh for Mesh {
             triangles,
             bounding_box,
         }
+    }
+}
+
+impl ToSimpleMesh for Mesh {
+    fn to_simple_mesh(&self) -> SimpleMesh {
+        self.to_simple_mesh_with_materials(&vec![])
     }
 }
