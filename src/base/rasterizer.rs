@@ -1,6 +1,6 @@
 use crate::base::{Context, SimpleMesh, Triangle};
+use termion::{color};
 use nalgebra::{Matrix4, Vector4};
-use termion::color;
 
 pub fn default_shader(shade: f32) -> String {
     let string = if shade <= 0.20 {
@@ -37,44 +37,25 @@ fn orient_triangle(triangle: &Triangle) -> f32 {
 }
 
 // Writes multiple meshes to context
-pub fn draw_mesh<F>(context: &mut Context, mesh: &SimpleMesh, transform: Matrix4<f32>, shader: F)
-where
-    F: Fn(f32) -> String,
-{
+pub fn draw_mesh<F>(context: &mut Context, mesh: &SimpleMesh, transform: Matrix4<f32>, shader: F) where F: Fn(f32) -> String {
     for triangle in &mesh.triangles {
         draw_triangle(context, &triangle, transform, &shader);
     }
 }
 
 fn bg(src: String, bg: (u8, u8, u8)) -> String {
-    format!(
-        "{}{}{}{}",
-        color::Fg(color::Rgb(bg.0, bg.1, bg.2)),
-        color::Bg(color::Rgb(25, 25, 25)),
-        src,
-        color::Fg(color::Reset)
-    )
+    format!("{}{}{}{}", color::Fg(color::Rgb(bg.0, bg.1, bg.2)),
+                        color::Bg(color::Rgb(25,25,25)), 
+                      src, 
+                      color::Fg(color::Reset))
 }
 
-pub fn draw_triangle<F>(
-    context: &mut Context,
-    triangle: &Triangle,
-    transform: Matrix4<f32>,
-    shader: F,
-) where
-    F: Fn(f32) -> String,
-{
+pub fn draw_triangle<F>(context: &mut Context, triangle: &Triangle, transform: Matrix4<f32>, shader: F) where F: Fn(f32) -> String {
     let mut dist_triangle = triangle.clone();
     dist_triangle.mul(context.utransform * transform);
     let aabb = dist_triangle.to_aabb(); // Calculate triangle bounds
-    let mins: (usize, usize) = (
-        aabb.min[0].max(1.0).ceil() as usize,
-        aabb.min[1].max(1.0).ceil() as usize,
-    );
-    let maxs: (usize, usize) = (
-        (aabb.max[0] * 2.0).min((context.width - 1) as f32).ceil() as usize,
-        aabb.max[1].min((context.height - 1) as f32).ceil() as usize,
-    );
+    let mins: (usize, usize) = (aabb.min[0].max(1.0).ceil() as usize, aabb.min[1].max(1.0).ceil() as usize);
+    let maxs: (usize, usize) = ((aabb.max[0] * 2.0).min((context.width - 1) as f32).ceil() as usize, aabb.max[1].min((context.height - 1) as f32).ceil() as usize);
     let a = 1.0 / orient_triangle(&dist_triangle);
 
     for y in mins.1..maxs.1 {
@@ -87,13 +68,13 @@ pub fn draw_triangle<F>(
                 let pixel_shade = dist_triangle.normal().z * a * (w0 + w1 + w2);
                 let z = dist_triangle.v1[2]
                     + a * (w1 * (dist_triangle.v2[2] - dist_triangle.v1[2])
-                        + w2 * (dist_triangle.v3[2] - dist_triangle.v1[2]));
+                         + w2 * (dist_triangle.v3[2] - dist_triangle.v1[2]));
                 let id = y * context.width + x * 2;
                 if z < context.z_buffer[id] {
                     context.z_buffer[id] = z;
                     let pixel = bg(shader(pixel_shade), dist_triangle.color);
                     context.frame_buffer[id] = (&pixel).to_string();
-                    context.frame_buffer[id + 1] = (&pixel).to_string();
+                    context.frame_buffer[id+1] = (&pixel).to_string();
                 }
             }
         }
