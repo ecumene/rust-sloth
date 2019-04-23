@@ -27,10 +27,10 @@ fn obj_to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Ve
 fn main() {
     let matches = cli_matches(); // Read command line arguments
     let mut mesh_queue: Vec<SimpleMesh> = vec![]; // A list of meshes to render
-    for filename in matches.value_of("OBJ INPUT").unwrap().split(' ') {
+    for slice in matches.value_of("OBJ INPUT").unwrap().split(' ') {
         // Fill list with file inputs (Splits for spaces -> multiple files)
-        let unknown = || panic!("unknown file type:{}", filename);
-        let path = Path::new(filename);
+        let unknown = || panic!("unknown file type:{}", slice);
+        let path = Path::new(slice);
         let mut meshes = match path.extension() {
             None => unknown(),
             Some(ext) => match ext.to_str().unwrap() {
@@ -46,11 +46,10 @@ fn main() {
                 _ => unknown(),
             },
         };
-        println!("{:?}", meshes);
         mesh_queue.append(&mut meshes);
     }
-    let mut speed: f32 = 1.0; // Default speed for the x-axis spinning
-    let mut turntable = (0.0, 0.0, 0.0); // Euler rotation variables, quaternions aren't very user friendly
+    let mut speed: f32 = 1.0;               // Default speed for the x-axis spinning
+    let mut turntable = (0.0, 0.0, 0.0);    // Euler rotation variables, quaternions aren't very user friendly
     if matches.is_present("turntable") {
         // Parse turntable speed
         speed = matches.value_of("turntable").unwrap().parse().unwrap();

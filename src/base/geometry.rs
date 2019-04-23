@@ -1,9 +1,8 @@
 use nalgebra::{Matrix4, Unit, Vector4};
 use std::clone::Clone;
-use tobj::{Material, Mesh};
+use tobj::{Mesh, Material};
 
 // 2 3D points = Axis aligned bounding box
-#[derive(Debug)]
 pub struct AABB {
     pub min: Vector4<f32>,
     pub max: Vector4<f32>,
@@ -17,9 +16,8 @@ impl AABB {
 }
 
 // Three Points in 3D = Triangle
-#[derive(Debug)]
 pub struct Triangle {
-    pub color: (u8, u8, u8),
+    pub color: (u8,u8,u8),
     pub v1: Vector4<f32>,
     pub v2: Vector4<f32>,
     pub v3: Vector4<f32>,
@@ -70,7 +68,6 @@ pub trait ToSimpleMeshWithMaterial {
     fn to_simple_mesh_with_materials(&self, materials: &Vec<Material>) -> SimpleMesh;
 }
 
-#[derive(Debug)]
 pub struct SimpleMesh {
     pub bounding_box: AABB,
     pub triangles: Vec<Triangle>,
@@ -106,11 +103,7 @@ impl ToSimpleMeshWithMaterial for Mesh {
 
             if materials.len() > 0 {
                 let material = &materials[*&self.material_id.unwrap()];
-                tri.color = (
-                    (material.diffuse[0] * 255.0) as u8,
-                    (material.diffuse[1] * 255.0) as u8,
-                    (material.diffuse[2] * 255.0) as u8,
-                );
+                tri.color = ((material.diffuse[0] * 255.0) as u8, (material.diffuse[1] * 255.0) as u8, (material.diffuse[2] * 255.0) as u8);
             }
 
             let aabb = tri.to_aabb(); // Compare this triangles aabb to the mesh's aabb
@@ -134,17 +127,19 @@ impl ToSimpleMesh for Mesh {
     }
 }
 
+/// Convert stl_io IndexedMesh into Sloth style triangles.
 impl ToSimpleMesh for stl_io::IndexedMesh {
     fn to_simple_mesh(&self) -> SimpleMesh {
         let mut bounding_box = AABB {
             min: Vector4::new(std::f32::MAX, std::f32::MAX, std::f32::MAX, 1.0),
             max: Vector4::new(std::f32::MIN, std::f32::MIN, std::f32::MIN, 1.0),
         };
-        fn stlv2v4(v: [f32; 3]) -> Vector4<f32> {
-            Vector4::new(v[0], v[1], v[2], 1.0)
+        fn stlv2v4(stlio_vec: [f32; 3]) -> Vector4<f32> {
+            Vector4::new(stlio_vec[0], stlio_vec[1], stlio_vec[2], 1.0)
         };
         let mut triangles = vec![
             Triangle {
+				// at time of writing, stl_io lacked color
                 color: (0xFF, 0xFF, 0x00),
                 v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
                 v2: Vector4::new(0.0, 0.0, 0.0, 1.0),
