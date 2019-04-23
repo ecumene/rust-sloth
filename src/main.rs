@@ -1,5 +1,4 @@
 use std::f32;
-//use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{stdout, Read, Write};
 use std::path::Path;
@@ -16,20 +15,12 @@ pub use base::*;
 pub mod inputs;
 pub use inputs::*;
 
-fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<SimpleMesh> {
+fn obj_to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<SimpleMesh> {
     let mut meshes: Vec<SimpleMesh> = vec![];
     for model in models {
         meshes.push(model.mesh.to_simple_mesh_with_materials(&materials));
     }
     meshes
-}
-
-fn stl_to_meshes(models: Vec<stl_io::IndexedMesh> )->Vec<SimpleMesh>
-{
-    models
-        .iter()
-        .map(|x| x.to_simple_mesh())
-        .collect()
 }
 
 //TODO: The output blinks very slightly when new output is being posted. Perhaps this is a WSL issue on my part?
@@ -45,14 +36,13 @@ fn main() {
             Some(ext) => match ext.to_str().unwrap() {
                 "obj" => {
                     let present = tobj::load_obj(&path).unwrap();
-                    to_meshes(present.0, present.1)
+                    obj_to_meshes(present.0, present.1)
                 }
                 "stl" => {
-//stl_file_to_meshes(path),
-    let mut file = OpenOptions::new().read(true).open(&path).unwrap();
-    let stl = stl_io::read_stl(&mut file).unwrap();
-	stl_to_meshes( vec![stl] )
-},
+                    let mut file = OpenOptions::new().read(true).open(&path).unwrap();
+                    let stl_iomesh = stl_io::read_stl(&mut file).unwrap();
+					vec![stl_iomesh.to_simple_mesh()]
+                }
                 _ => unknown(),
             },
         };
