@@ -15,7 +15,7 @@ pub use base::*;
 pub mod inputs;
 pub use inputs::*;
 
-fn obj_to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<SimpleMesh> {
+fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<SimpleMesh> {
     let mut meshes: Vec<SimpleMesh> = vec![];
     for model in models {
         meshes.push(model.mesh.to_simple_mesh_with_materials(&materials));
@@ -25,8 +25,8 @@ fn obj_to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Ve
 
 //TODO: The output blinks very slightly when new output is being posted. Perhaps this is a WSL issue on my part?
 fn main() {
-    let matches = cli_matches(); // Read command line arguments
-    let mut mesh_queue: Vec<SimpleMesh> = vec![]; // A list of meshes to render
+    let matches = cli_matches();                    // Read command line arguments
+    let mut mesh_queue: Vec<SimpleMesh> = vec![];   // A list of meshes to render
     for slice in matches.value_of("OBJ INPUT").unwrap().split(' ') {
         // Fill list with file inputs (Splits for spaces -> multiple files)
         let unknown = || panic!("unknown file type:{}", slice);
