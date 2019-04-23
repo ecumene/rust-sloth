@@ -30,21 +30,21 @@ fn main() {
     for slice in matches.value_of("OBJ INPUT").unwrap().split(' ') {
         // Fill list with file inputs (Splits for spaces -> multiple files)
         let error = |s: &str, e: &str| -> Vec<SimpleMesh> {
-            println!("{}, filename:{}, {}", s, slice, e);
+            println!("filename: [{}] couldn't load, {}. {}", slice, s, e);
             vec![]
         };
         let path = Path::new(slice);
         let mut meshes = match path.extension() {
-            None => error("cannot find extension", ""),
+            None => error("couldn't find filename extension", ""),
             Some(ext) => match ext.to_str() {
-                None => error("cannot parse extension", ""),
+                None => error("couldn't parse filename extension", ""),
                 Some(extstr) => match &*extstr.to_lowercase() {
                     "obj" => match tobj::load_obj(&path) {
                         Err(e) => error("tobj couldnt load/parse OBJ", &e.to_string()),
                         Ok(present) => to_meshes(present.0, present.1),
                     },
                     "stl" => match OpenOptions::new().read(true).open(&path) {
-                        Err(e) => error("couldnt load STL", &e.to_string()),
+                        Err(e) => error("STL load failed", &e.to_string()),
                         Ok(mut file) => match stl_io::read_stl(&mut file) {
                             Err(e) => error("stl_io couldnt parse STL", &e.to_string()),
                             Ok(stlio_mesh) => vec![stlio_mesh.to_simple_mesh()],
