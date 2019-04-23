@@ -36,7 +36,7 @@ fn main() {
             Some(ext) => match ext.to_str().unwrap() {
                 "obj" => {
                     let present = tobj::load_obj(&path).unwrap();
-                    obj_to_meshes(present.0, present.1)
+                    to_meshes(present.0, present.1)
                 }
                 "stl" => {
                     let mut file = OpenOptions::new().read(true).open(&path).unwrap();
