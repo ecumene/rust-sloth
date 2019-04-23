@@ -136,7 +136,6 @@ impl ToSimpleMesh for Mesh {
 
 impl ToSimpleMesh for stl_io::IndexedMesh {
     fn to_simple_mesh(&self) -> SimpleMesh {
-        let mut meshes: Vec<SimpleMesh> = vec![];
         let mut bounding_box = AABB {
             min: Vector4::new(std::f32::MAX, std::f32::MAX, std::f32::MAX, 1.0),
             max: Vector4::new(std::f32::MIN, std::f32::MIN, std::f32::MIN, 1.0),
@@ -154,16 +153,16 @@ impl ToSimpleMesh for stl_io::IndexedMesh {
             self.faces.len()
         ];
         for i in 0..self.faces.len() {
-                triangles[i].v1 = stlv2v4(self.vertices[self.faces[i].vertices[0]]);
-                triangles[i].v2 = stlv2v4(self.vertices[self.faces[i].vertices[1]]);
-                triangles[i].v3 = stlv2v4(self.vertices[self.faces[i].vertices[2]]);
-                let aabb = triangles[i].to_aabb();
-                bounding_box.min.x = aabb.min.x.min(bounding_box.min.x);
-                bounding_box.min.y = aabb.min.y.min(bounding_box.min.y);
-                bounding_box.min.z = aabb.min.z.min(bounding_box.min.z);
-                bounding_box.max.x = aabb.max.x.max(bounding_box.max.x);
-                bounding_box.max.y = aabb.max.y.max(bounding_box.max.y);
-                bounding_box.max.z = aabb.max.z.max(bounding_box.max.z);
+            triangles[i].v1 = stlv2v4(self.vertices[self.faces[i].vertices[0]]);
+            triangles[i].v2 = stlv2v4(self.vertices[self.faces[i].vertices[1]]);
+            triangles[i].v3 = stlv2v4(self.vertices[self.faces[i].vertices[2]]);
+            let aabb = triangles[i].to_aabb();
+            bounding_box.min.x = aabb.min.x.min(bounding_box.min.x);
+            bounding_box.min.y = aabb.min.y.min(bounding_box.min.y);
+            bounding_box.min.z = aabb.min.z.min(bounding_box.min.z);
+            bounding_box.max.x = aabb.max.x.max(bounding_box.max.x);
+            bounding_box.max.y = aabb.max.y.max(bounding_box.max.y);
+            bounding_box.max.z = aabb.max.z.max(bounding_box.max.z);
         }
         SimpleMesh {
             triangles,
