@@ -1,4 +1,6 @@
 use std::f32;
+//use std::ffi::OsStr;
+use std::fs::OpenOptions;
 use std::io::{stdout, Read, Write};
 use std::path::Path;
 use std::time::Instant;
@@ -22,17 +24,43 @@ fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<Si
     meshes
 }
 
+fn stl_to_meshes(models: Vec<stl_io::IndexedMesh> )->Vec<SimpleMesh>
+{
+    models
+        .iter()
+        .map(|x| x.to_simple_mesh())
+        .collect()
+}
+
 //TODO: The output blinks very slightly when new output is being posted. Perhaps this is a WSL issue on my part?
 fn main() {
-    let matches = cli_matches();                    // Read command line arguments
-    let mut mesh_queue: Vec<SimpleMesh> = vec![];   // A list of meshes to render
-    for slice in matches.value_of("OBJ INPUT").unwrap().split(' ') {
+    let matches = cli_matches(); // Read command line arguments
+    let mut mesh_queue: Vec<SimpleMesh> = vec![]; // A list of meshes to render
+    for filename in matches.value_of("OBJ INPUT").unwrap().split(' ') {
         // Fill list with file inputs (Splits for spaces -> multiple files)
-        let present = tobj::load_obj(&Path::new(slice)).unwrap();
-        mesh_queue.append(&mut to_meshes(present.0, present.1));
+        let unknown = || panic!("unknown file type:{}", filename);
+        let path = Path::new(filename);
+        let mut meshes = match path.extension() {
+            None => unknown(),
+            Some(ext) => match ext.to_str().unwrap() {
+                "obj" => {
+                    let present = tobj::load_obj(&path).unwrap();
+                    to_meshes(present.0, present.1)
+                }
+                "stl" => {
+//stl_file_to_meshes(path),
+    let mut file = OpenOptions::new().read(true).open(&path).unwrap();
+    let stl = stl_io::read_stl(&mut file).unwrap();
+	stl_to_meshes( vec![stl] )
+},
+                _ => unknown(),
+            },
+        };
+        println!("{:?}", meshes);
+        mesh_queue.append(&mut meshes);
     }
-    let mut speed: f32 = 1.0;               // Default speed for the x-axis spinning
-    let mut turntable = (0.0, 0.0, 0.0);    // Euler rotation variables, quaternions aren't very user friendly
+    let mut speed: f32 = 1.0; // Default speed for the x-axis spinning
+    let mut turntable = (0.0, 0.0, 0.0); // Euler rotation variables, quaternions aren't very user friendly
     if matches.is_present("turntable") {
         // Parse turntable speed
         speed = matches.value_of("turntable").unwrap().parse().unwrap();
