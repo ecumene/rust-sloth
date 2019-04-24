@@ -27,11 +27,11 @@ fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<Si
 fn main() {
     let matches = cli_matches(); // Read command line arguments
     let mut mesh_queue: Vec<SimpleMesh> = vec![]; // A list of meshes to render
-    let error = |s: &str, e: &str| -> Vec<SimpleMesh> {
-        println!("filename: [{}] couldn't load, {}. {}", slice, s, e);
-        vec![]
-    };
-    for slice in matches.value_of("OBJ INPUT").unwrap().split(' ') {
+    for slice in matches.value_of("INPUT FILENAME").unwrap().split(' ') {
+        let error = |s: &str, e: &str| -> Vec<SimpleMesh> {
+            println!("filename: [{}] couldn't load, {}. {}", slice, s, e);
+            vec![]
+        };
         // Fill list with file inputs (Splits for spaces -> multiple files)
         let path = Path::new(slice);
         let mut meshes = match path.extension() {
