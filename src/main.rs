@@ -1,4 +1,4 @@
-use crossterm::{cursor, Crossterm, InputEvent, KeyEvent};
+use crossterm::{cursor, Crossterm, InputEvent, KeyEvent, RawScreen};
 use std::error::Error;
 use std::f32;
 use std::io::{stdout, Write};
@@ -52,6 +52,8 @@ fn main() -> Result<(), Box<Error>> {
     let size: (u16, u16) = (0, 0); // This is the terminal size, it's used to check when a new context must be made
 
     let crossterm = Crossterm::new();
+    #[allow(unused)]
+    let screen = RawScreen::into_raw_mode();
     let input = crossterm.input();
     let mut stdin = input.read_async();
     let cursor = cursor();
