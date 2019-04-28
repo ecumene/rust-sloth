@@ -6,8 +6,8 @@ pub fn cli_matches<'a>() -> ArgMatches<'a> {
         .author("Mitchell Hynes. <mshynes@mun.ca>")
         .about("A toy for rendering 3D objects in the command line")
         .arg(
-            Arg::with_name("OBJ INPUT")
-                .help("Sets the input obj file to render")
+            Arg::with_name("INPUT FILENAME")
+                .help("Sets the input file to render")
                 .required(true)
                 .index(1),
         )
