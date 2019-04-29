@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<Error>> {
         let error = |s: &str, e: &str| -> Vec<SimpleMesh> {
             println!("filename: [{}] couldn't load, {}. {}", slice, s, e);
             vec![]
-        };  
+        };
         // Fill list with file inputs (Splits for spaces -> multiple files)
         let path = Path::new(slice);
         let mut meshes = match path.extension() {
