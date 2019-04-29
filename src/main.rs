@@ -26,11 +26,11 @@ fn main() -> Result<(), Box<Error>> {
     let matches = cli_matches(); // Read command line arguments
     let mut mesh_queue: Vec<SimpleMesh> = vec![]; // A list of meshes to render
     for slice in matches.value_of("INPUT FILENAME").unwrap().split(' ') {
-        // Fill list with file inputs (Splits for spaces -> multiple files)
         let error = |s: &str, e: &str| -> Vec<SimpleMesh> {
             println!("filename: [{}] couldn't load, {}. {}", slice, s, e);
             vec![]
         };  
+        // Fill list with file inputs (Splits for spaces -> multiple files)
         let path = Path::new(slice);
         let mut meshes = match path.extension() {
             None => error("couldn't determine filename extension", ""),
