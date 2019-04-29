@@ -1,6 +1,7 @@
 use crossterm::{cursor, Crossterm, InputEvent, KeyEvent, RawScreen};
 use std::error::Error;
 use std::f32;
+use std::fs::OpenOptions;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::Instant;
@@ -24,10 +25,34 @@ fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<Si
 fn main() -> Result<(), Box<Error>> {
     let matches = cli_matches(); // Read command line arguments
     let mut mesh_queue: Vec<SimpleMesh> = vec![]; // A list of meshes to render
-    for slice in matches.value_of("OBJ INPUT").unwrap().split(' ') {
+    for slice in matches.value_of("INPUT FILENAME").unwrap().split(' ') {
         // Fill list with file inputs (Splits for spaces -> multiple files)
-        let present = tobj::load_obj(&Path::new(slice)).unwrap();
-        mesh_queue.append(&mut to_meshes(present.0, present.1));
+        let error = |s: &str, e: &str| -> Vec<SimpleMesh> {
+            println!("filename: [{}] couldn't load, {}. {}", slice, s, e);
+            vec![]
+        };  
+        let path = Path::new(slice);
+        let mut meshes = match path.extension() {
+            None => error("couldn't determine filename extension", ""),
+            Some(ext) => match ext.to_str() {
+                None => error("couldn't parse filename extension", ""),
+                Some(extstr) => match &*extstr.to_lowercase() {
+                    "obj" => match tobj::load_obj(&path) {
+                        Err(e) => error("tobj couldnt load/parse OBJ", &e.to_string()),
+                        Ok(present) => to_meshes(present.0, present.1),
+                    },
+                    "stl" => match OpenOptions::new().read(true).open(&path) {
+                        Err(e) => error("STL load failed", &e.to_string()),
+                        Ok(mut file) => match stl_io::read_stl(&mut file) {
+                            Err(e) => error("stl_io couldnt parse STL", &e.to_string()),
+                            Ok(stlio_mesh) => vec![stlio_mesh.to_simple_mesh()],
+                        },
+                    },
+                    _ => error("unknown filename extension", ""),
+                },
+            },
+        };
+        mesh_queue.append(&mut meshes);
     }
     let mut speed: f32 = 1.0; // Default speed for the x-axis spinning
     let mut turntable = (0.0, 0.0, 0.0); // Euler rotation variables, quaternions aren't very user friendly
