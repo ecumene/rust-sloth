@@ -1,13 +1,12 @@
+use crossterm::{cursor, Crossterm, InputEvent, KeyEvent, RawScreen};
+use std::error::Error;
 use std::f32;
 use std::fs::OpenOptions;
-use std::io::{stdout, Read, Write};
+use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::Instant;
-use termion::async_stdin;
-use termion::raw::IntoRawMode;
-use termion::screen::*;
 
-use nalgebra::{Matrix4, Rotation3};
+use nalgebra::Rotation3;
 
 pub mod base;
 pub use base::*;
@@ -23,8 +22,7 @@ fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<Si
     meshes
 }
 
-//TODO: The output blinks very slightly when new output is being posted. Perhaps this is a WSL issue on my part?
-fn main() {
+fn main() -> Result<(), Box<Error>> {
     let matches = cli_matches(); // Read command line arguments
     let mut mesh_queue: Vec<SimpleMesh> = vec![]; // A list of meshes to render
     for slice in matches.value_of("INPUT FILENAME").unwrap().split(' ') {
@@ -77,26 +75,42 @@ fn main() {
     }
     let mut context: Context = Context::blank(); // The context holds the frame+z buffer, and the width and height
     let size: (u16, u16) = (0, 0); // This is the terminal size, it's used to check when a new context must be made
-    let mut stdout = AlternateScreen::from(stdout().into_raw_mode().unwrap()); // Raw output is clean output
-    let mut stdin = async_stdin().bytes(); // Async in so input isn't blocking
+
+    let crossterm = Crossterm::new();
+    #[allow(unused)]
+    let screen = RawScreen::into_raw_mode();
+    let input = crossterm.input();
+    let mut stdin = input.read_async();
+    let cursor = cursor();
+
+    cursor.hide()?;
+
     let mut last_time; // Used in the variable time step
     loop {
         last_time = Instant::now();
-        let b = stdin.next();
-        if let Some(Ok(b'q')) = b {
-            break;
+        if let Some(b) = stdin.next() {
+            match b {
+                InputEvent::Keyboard(event) => match event {
+                    KeyEvent::Char('q') => break,
+                    _ => {}
+                },
+                _ => {}
+            }
         }
         let rot =
             Rotation3::from_euler_angles(turntable.0, turntable.1, turntable.2).to_homogeneous();
-        context.update(size, &mesh_queue); // This checks for if there needs to be a context update
+        context.update(size, &mesh_queue)?; // This checks for if there needs to be a context update
         context.clear(); // This clears the z and frame buffer
         for mesh in &mesh_queue {
             // Render all in mesh queue
             draw_mesh(&mut context, &mesh, rot, default_shader); // Draw all meshes
         }
-        context.flush(); // This prints all framebuffer info (good for changing colors ;)
-        stdout.flush().unwrap();
+        context.flush()?; // This prints all framebuffer info (good for changing colors ;)
+        stdout().flush().unwrap();
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
         turntable.1 += (speed * dt) as f32; // Turns the turntable
     }
+
+    cursor.show()?;
+    Ok(())
 }

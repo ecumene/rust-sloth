@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 nalgebra = "0.17"
-termion = "1"
+crossterm = "0.9.3"
 tobj = "0.1.6"
 clap = "2.32"
 stl_io = "0.4.2"
