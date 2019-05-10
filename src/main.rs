@@ -58,7 +58,7 @@ fn main() -> Result<(), Box<Error>> {
     let mut turntable = (0.0, 0.0, 0.0); // Euler rotation variables, quaternions aren't very user friendly
     if matches.is_present("turntable") {
         // Parse turntable speed
-        speed = matches.value_of("turntable").unwrap().parse().unwrap();
+        speed = matches.value_of("turntable").unwrap().parse()?;
     }
     if matches.is_present("rotation") {
         let value = matches.value_of("rotation").unwrap(); // Parse initial rotation
@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<Error>> {
             rotation[2].parse().unwrap(),
         );
     }
-    let mut context: Context = Context::blank(); // The context holds the frame+z buffer, and the width and height
+    let mut context: Context = Context::blank(matches.is_present("image")); // The context holds the frame+z buffer, and the width and height
     let size: (u16, u16) = (0, 0); // This is the terminal size, it's used to check when a new context must be made
 
     let crossterm = Crossterm::new();
@@ -109,6 +109,10 @@ fn main() -> Result<(), Box<Error>> {
         stdout().flush().unwrap();
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
         turntable.1 += (speed * dt) as f32; // Turns the turntable
+
+        if !context.image {
+            break;
+        }
     }
 
     cursor.show()?;
