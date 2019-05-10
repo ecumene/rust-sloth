@@ -10,10 +10,11 @@ pub struct Context {
     pub height: usize,
     pub frame_buffer: Vec<(char, (u8, u8, u8))>,
     pub z_buffer: Vec<f32>,
+    pub image: bool
 }
 
 impl Context {
-    pub fn blank() -> Context {
+    pub fn blank(image: bool) -> Context {
         //TODO: Make this a constant struct
         Context {
             utransform: Matrix4::new(
@@ -23,6 +24,7 @@ impl Context {
             height: 0,
             frame_buffer: vec![],
             z_buffer: vec![],
+            image: image
         }
     }
     pub fn clear(&mut self) {

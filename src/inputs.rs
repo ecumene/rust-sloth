@@ -12,10 +12,11 @@ pub fn cli_matches<'a>() -> ArgMatches<'a> {
                 .index(1),
         )
         .arg(
-            Arg::with_name("v")
-                .short("v")
-                .multiple(true)
-                .help("Sets the level of verbosity"),
+            Arg::with_name("resolution")
+                .short("i")
+                .long("image")
+                .help("Generates an image instead of realtime raw terminal output with a square resolution")
+                .takes_value(true),
         )
         .arg(
             Arg::with_name("turntable")
