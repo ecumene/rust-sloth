@@ -56,34 +56,41 @@ fn main() -> Result<(), Box<Error>> {
     }
     let mut speed: f32 = 1.0; // Default speed for the x-axis spinning
     let mut turntable = (0.0, 0.0, 0.0); // Euler rotation variables, quaternions aren't very user friendly
-    if matches.is_present("turntable") {
+    if matches.is_present("speed") {
         // Parse turntable speed
-        speed = matches.value_of("turntable").unwrap().parse()?;
+        speed = matches.value_of("speed").unwrap().parse()?;
     }
-    if matches.is_present("rotation") {
-        let value = matches.value_of("rotation").unwrap(); // Parse initial rotation
-        if value.matches(' ').count() != 2 {
-            // At least 3 inputs "x y z"
-            panic!("Incorrect arguments in rotation. Format: x y z (in degrees)"); // Panic on not enough or too many
-        }
-        let rotation: Vec<&str> = value.split(' ').collect();
-        turntable = (
-            rotation[0].parse().unwrap(),
-            rotation[1].parse().unwrap(),
-            rotation[2].parse().unwrap(),
-        );
+    if matches.is_present("x") {
+        turntable.0 = matches.value_of("x").unwrap().parse().unwrap(); // Parse initial rotation
     }
-    let mut context: Context = Context::blank(matches.is_present("image")); // The context holds the frame+z buffer, and the width and height
-    let size: (u16, u16) = (0, 0); // This is the terminal size, it's used to check when a new context must be made
+    if matches.is_present("y") {
+        turntable.1 = matches.value_of("y").unwrap().parse().unwrap(); // Parse initial rotation
+    }
+    if matches.is_present("z") {
+        turntable.2 = matches.value_of("z").unwrap().parse().unwrap(); // Parse initial rotation
+    }
 
     let crossterm = Crossterm::new();
-    #[allow(unused)]
-    let screen = RawScreen::into_raw_mode();
     let input = crossterm.input();
     let mut stdin = input.read_async();
     let cursor = cursor();
 
-    cursor.hide()?;
+    let mut context: Context = Context::blank(matches.is_present("image")); // The context holds the frame+z buffer, and the width and height
+    if context.image {
+        if let Some(x) = matches.value_of("width") {
+            context.width = x.parse().unwrap();
+            if let Some(y) = matches.value_of("height") {
+                context.height = y.parse().unwrap();
+            } else {
+                context.height = context.width;
+            }
+        }
+    } else {
+        #[allow(unused)]
+        let screen = RawScreen::into_raw_mode();
+        cursor.hide()?;
+    }
+    let size: (u16, u16) = (0, 0); // This is the terminal size, it's used to check when a new context must be made
 
     let mut last_time; // Used in the variable time step
     loop {
@@ -105,12 +112,12 @@ fn main() -> Result<(), Box<Error>> {
             // Render all in mesh queue
             draw_mesh(&mut context, &mesh, rot, default_shader); // Draw all meshes
         }
-        context.flush()?; // This prints all framebuffer info (good for changing colors ;)
+        context.flush()?; // This prints all framebuffer info
         stdout().flush().unwrap();
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
         turntable.1 += (speed * dt) as f32; // Turns the turntable
 
-        if !context.image {
+        if context.image {
             break;
         }
     }
