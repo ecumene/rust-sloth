@@ -79,12 +79,14 @@ pub fn draw_triangle<F>(
                 let id = y * context.width + x * 2;
                 if z < context.z_buffer[id] {
                     context.z_buffer[id] = z;
-                    //let pixel = bg(shader(pixel_shade), dist_triangle.color);
                     let pixel = (shader(pixel_shade), dist_triangle.color);
                     context.frame_buffer[id] = pixel;
                     context.frame_buffer[id + 1] = pixel;
                 }
             }
+        }
+        if context.image {
+            context.frame_buffer[y * context.width + 1] = ('\n', (0, 0, 0));
         }
     }
 }
