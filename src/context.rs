@@ -1,4 +1,4 @@
-use crate::base::SimpleMesh;
+use crate::geometry::SimpleMesh;
 use crossterm::{cursor, terminal, Attribute, Color, Colored};
 use nalgebra::Matrix4;
 use std::error::Error;
