@@ -4,25 +4,23 @@ use crate::context::{Context};
 use std::error::Error;
 
 pub fn cli_matches<'a>() -> ArgMatches<'a> {
-    App::new("My Super Program")
+    commands_for_subcommands(App::new("Sloth")
         .version("0.1")
         .author("Mitchell Hynes. <mshynes@mun.ca>")
         .about("A toy for rendering 3D objects in the command line")
-        .subcommand(SubCommand::with_name("webify")
-            .about("Generates a portable JS based render of your object for the web")
-            .author("Mitchell Hynes <mitchell.hynes@ecumene.xyz>")
-            .arg(Arg::with_name("file")
-                .short("f")
-                .help("The file name of the JS code")
-                .required(true)
-                .takes_value(true)))
-        .subcommand(SubCommand::with_name("image")
+        .subcommand(commands_for_subcommands(SubCommand::with_name("image")
             .about("Generates a colorless terminal output as lines of text")
             .author("Mitchell Hynes <mitchell.hynes@ecumene.xyz>")
             .arg(
+                Arg::with_name("frame count")
+                    .short("j")
+                    .long("webify")
+                    .help("Generates a portable JS based render of your object for the web")
+                    .takes_value(true)
+            )
+            .arg(
                 Arg::with_name("width")
                     .short("w")
-                    .long("width")
                     .help("Sets the width of the image to generate")
                     .takes_value(true)
                     .required(true)
@@ -30,66 +28,52 @@ pub fn cli_matches<'a>() -> ArgMatches<'a> {
             .arg(
                 Arg::with_name("height")
                     .short("h")
-                    .long("height")
                     .help("Sets the height of the image to generate")
                     .takes_value(true)
-            )
-            .arg(
-                Arg::with_name("x")
-                    .short("x")
-                    .long("x rotation")
-                    .help("Sets the object's static X rotation (in radians)")
-                    .takes_value(true)
-            )
-            .arg(
-                Arg::with_name("y")
-                    .short("y")
-                    .long("y rotation")
-                    .help("Sets the object's static Y rotation (in radians)")
-                    .takes_value(true)
-            )
-            .arg(
-                Arg::with_name("z")
-                    .short("z")
-                    .long("z rotation")
-                    .help("Sets the object's static Z rotation (in radians)")
-                    .takes_value(true)
-            ))
+            )))
         .arg(
             Arg::with_name("INPUT FILENAME")
                 .help("Sets the input file to render")
                 .required(true)
                 .index(1)
-        )
-        .arg(
-            Arg::with_name("speed")
-                .short("s")
-                .long("turntable")
-                .help("Sets the automatic turntable speed (radians / second in the x direction)")
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("x")
-                .short("x")
-                .long("x rotation")
-                .help("Sets the object's static X rotation (in radians)")
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("y")
-                .short("y")
-                .long("y rotation")
-                .help("Sets the object's static Y rotation (in radians)")
-                .takes_value(true)
-        )
-        .arg(
-            Arg::with_name("z")
-                .short("z")
-                .long("z rotation")
-                .help("Sets the object's static Z rotation (in radians)")
-                .takes_value(true)
-        )
+        ))
         .get_matches()
+}
+
+fn commands_for_subcommands<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
+    command_flag_color(command_rotates(app))
+}
+
+fn command_flag_color<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
+    app.arg(
+        Arg::with_name("no_color")
+            .short("b")
+            .help("Flags the rasterizer to render without color")
+    )
+}
+
+fn command_rotates<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
+    app.arg(
+        Arg::with_name("x")
+            .short("x")
+            .long("yaw")
+            .help("Sets the object's static X rotation (in radians)")
+            .takes_value(true)
+    )
+    .arg(
+        Arg::with_name("y")
+            .short("y")
+            .long("pitch")
+            .help("Sets the object's static Y rotation (in radians)")
+            .takes_value(true)
+    )
+    .arg(
+        Arg::with_name("z")
+            .short("z")
+            .long("roll")
+            .help("Sets the object's static Z rotation (in radians)")
+            .takes_value(true)
+    )
 }
 
 pub fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<SimpleMesh> {
@@ -121,7 +105,11 @@ pub fn match_turntable(matches: &ArgMatches) -> Result<(f32, f32, f32, f32), Box
 }
 
 pub fn match_image_mode(matches: &ArgMatches) -> bool {
-    matches.is_present("image") | matches.is_present("webify")
+    matches.is_present("image")
+}
+
+pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
+    matches.is_present("no_color")
 }
 
 pub fn match_dimensions<'a>(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<Error>> {
