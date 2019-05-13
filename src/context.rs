@@ -40,11 +40,14 @@ impl Context {
         self.utransform = proj * view;
         &self.utransform
     }
-    pub fn flush(&self) -> Result<(), Box<Error>> {
+    pub fn flush(&self, color: bool, webify: bool) -> Result<(), Box<Error>> {
         let mut prev_color = None;
 
         if !self.image {
             cursor().goto(0, 0)?;
+        }
+
+        if color {
             for pixel in &self.frame_buffer {
                 match prev_color {
                     Some(c) if c == pixel.1 => {
@@ -52,24 +55,30 @@ impl Context {
                     }
                     _ => {
                         prev_color = Some(pixel.1);
-                        print!(
-                            "{}{}{}",
-                            Colored::Fg(Color::Rgb {
-                                r: (pixel.1).0,
-                                g: (pixel.1).1,
-                                b: (pixel.1).2
-                            }),
-                            Colored::Bg(Color::Rgb {
-                                r: 25,
-                                g: 25,
-                                b: 25
-                            }),
-                            pixel.0
-                        )
+                        if webify {
+                            print!(
+                                "<span style=\"color:rgb({},{},{})\">{}",
+                                (pixel.1).0, (pixel.1).1, (pixel.1).2, pixel.0
+                            )
+                        } else {
+                            print!(
+                                "{}{}{}",
+                                Colored::Fg(Color::Rgb {
+                                    r: (pixel.1).0,
+                                    g: (pixel.1).1,
+                                    b: (pixel.1).2
+                                }),
+                                Colored::Bg(Color::Rgb {
+                                    r: 25,
+                                    g: 25,
+                                    b: 25
+                                }),
+                                pixel.0
+                            )
+                        }
                     }
                 }
             }
-            println!("{}", Attribute::Reset);
         } else {
             let mut frame = String::from("");
             for pixel in &self.frame_buffer {
@@ -80,6 +89,10 @@ impl Context {
                 frame
             )
 
+        }
+
+        if !self.image {
+            println!("{}", Attribute::Reset);
         }
 
         Ok(())
@@ -127,8 +140,10 @@ impl Context {
                 1.0,
             );
             self.utransform = t;
-            self.width = old_size.0 as usize;
-            self.height = (old_size.1) as usize;
+            if !self.image {
+                self.width = old_size.0 as usize;
+                self.height = (old_size.1) as usize;
+            }
         }
 
         Ok(())

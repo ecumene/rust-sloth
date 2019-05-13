@@ -5,6 +5,7 @@ use std::fs::OpenOptions;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::Instant;
+use std::process::Command;
 
 use nalgebra::Rotation3;
 
@@ -58,11 +59,21 @@ fn main() -> Result<(), Box<Error>> {
     let input = crossterm.input();
     let mut stdin = input.read_async();
     let cursor = cursor();
+    let mut no_color = true;
+    let mut webify = false;
+    let mut webify_frame_count = 0;
+    let mut webify_todo_frames = 0;
 
     let mut context: Context = Context::blank(match_image_mode(&matches)); // The context holds the frame+z buffer, and the width and height
     if context.image {
         if let Some(matches) = matches.subcommand_matches("image") {
             match_dimensions(&mut context, &matches)?;
+            turntable = match_turntable(matches)?;
+            no_color = match_no_color_mode(matches);
+            if let Some(animation_frames) = matches.value_of("frame count") {
+                webify_todo_frames = animation_frames.parse()?;
+                webify = true;
+            }
         }
     } else {
         #[allow(unused)]
@@ -71,6 +82,9 @@ fn main() -> Result<(), Box<Error>> {
     }
     let size: (u16, u16) = (0, 0); // This is the terminal size, it's used to check when a new context must be made
 
+    if webify {
+        println!("let frames = [");
+    }
     let mut last_time; // Used in the variable time step
     loop {
         last_time = Instant::now();
@@ -91,14 +105,30 @@ fn main() -> Result<(), Box<Error>> {
             // Render all in mesh queue
             draw_mesh(&mut context, &mesh, rot, default_shader); // Draw all meshes
         }
-        context.flush()?; // This prints all framebuffer info
+
+        if webify {
+            println!("`");
+        }
+        
+        context.flush(!no_color, webify)?; // This prints all framebuffer info
         stdout().flush().unwrap();
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
         turntable.1 += (turntable.3 * dt) as f32; // Turns the turntable
 
-        if context.image {
+        if webify {
+            println!("`,");
+            if turntable.1 > 9.42477 || webify_todo_frames - 1 == webify_frame_count {
+                break;
+            }
+            webify_frame_count+=1;
+        }
+
+        if context.image && !webify {
             break;
         }
+    }
+    if webify {
+        println!("];");
     }
 
     cursor.show()?;
