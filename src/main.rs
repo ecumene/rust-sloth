@@ -116,9 +116,11 @@ fn main() -> Result<(), Box<Error>> {
         turntable.1 += (turntable.3 * dt) as f32; // Turns the turntable
 
         if webify {
-            println!("`,");
             if turntable.1 > 9.42477 || webify_todo_frames - 1 == webify_frame_count {
+                println!("`];");
                 break;
+            } else {
+                println!("`,");
             }
             webify_frame_count+=1;
         }
@@ -126,9 +128,6 @@ fn main() -> Result<(), Box<Error>> {
         if context.image && !webify {
             break;
         }
-    }
-    if webify {
-        println!("];");
     }
 
     cursor.show()?;
