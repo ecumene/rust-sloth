@@ -5,7 +5,6 @@ use std::fs::OpenOptions;
 use std::io::{stdout, Write};
 use std::path::Path;
 use std::time::Instant;
-use std::process::Command;
 
 use nalgebra::Rotation3;
 
@@ -84,6 +83,7 @@ fn main() -> Result<(), Box<Error>> {
 
     if webify {
         println!("let frames = [");
+        turntable.3 = (2.0 * 3.14159) * (1.0 / webify_todo_frames as f32);
     }
     let mut last_time; // Used in the variable time step
     loop {
@@ -113,7 +113,11 @@ fn main() -> Result<(), Box<Error>> {
         context.flush(!no_color, webify)?; // This prints all framebuffer info
         stdout().flush().unwrap();
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
-        turntable.1 += (turntable.3 * dt) as f32; // Turns the turntable
+        turntable.1 += if webify {
+            turntable.3
+        } else {
+            (turntable.3 * dt) as f32
+        };
 
         if webify {
             if turntable.1 > 9.42477 || webify_todo_frames - 1 == webify_frame_count {
