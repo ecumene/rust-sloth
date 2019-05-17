@@ -10,7 +10,7 @@ supports OBJ file formats without textures.
 ---
 Here's a few really simple commands for you to get started.
 
-You can replace `sloth` with `cargo run --release` anywhere
+You can replace `sloth <args>` with `cargo run --release -- <args>` anywhere
 
 #### Render pikachu
 ```
