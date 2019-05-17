@@ -1,6 +1,8 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
-use crate::geometry::{SimpleMesh, ToSimpleMeshWithMaterial};
+use crate::geometry::{SimpleMesh, ToSimpleMeshWithMaterial, ToSimpleMesh};
 use crate::context::{Context};
+use std::fs::OpenOptions;
+use std::path::Path;
 use std::error::Error;
 
 pub fn cli_matches<'a>() -> ArgMatches<'a> {
@@ -82,6 +84,39 @@ pub fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Ve
         meshes.push(model.mesh.to_simple_mesh_with_materials(&materials));
     }
     meshes
+}
+
+pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<Error>> {
+    let mut mesh_queue: Vec<SimpleMesh> = vec![];
+    for slice in matches.value_of("INPUT FILENAME").unwrap().split(' ') {
+        let error = |s: &str, e: &str| -> Result<Vec<SimpleMesh>, Box<Error>> {
+            Err(format!("filename: [{}] couldn't load, {}. {}", slice, s, e).into())
+        };
+        // Fill list with file inputs (Splits for spaces -> multiple files)
+        let path = Path::new(slice);
+        let mut meshes = match path.extension() {
+            None => error("couldn't determine filename extension", ""),
+            Some(ext) => match ext.to_str() {
+                None => error("couldn't parse filename extension", ""),
+                Some(extstr) => match &*extstr.to_lowercase() {
+                    "obj" => match tobj::load_obj(&path) {
+                        Err(e) => error("tobj couldnt load/parse OBJ", &e.to_string()),
+                        Ok(present) => Ok(to_meshes(present.0, present.1)),
+                    },
+                    "stl" => match OpenOptions::new().read(true).open(&path) {
+                        Err(e) => error("STL load failed", &e.to_string()),
+                        Ok(mut file) => match stl_io::read_stl(&mut file) {
+                            Err(e) => error("stl_io couldnt parse STL", &e.to_string()),
+                            Ok(stlio_mesh) => Ok(vec![stlio_mesh.to_simple_mesh()]),
+                        },
+                    },
+                    _ => error("unknown filename extension", ""),
+                },
+            },
+        };
+        mesh_queue.append(&mut meshes.unwrap());
+    }
+    Ok(mesh_queue)
 }
 
 pub fn match_turntable(matches: &ArgMatches) -> Result<(f32, f32, f32, f32), Box<Error>> {
