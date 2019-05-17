@@ -18,15 +18,15 @@ sloth models/Pikachu.obj
 ```
 #### For multiple models:   
 ```
-sloth "models/suzy.obj models/Pikachu.obj"
+sloth "models/suzy.obj models/suzy.obj"
 ```
 #### You can also generate a static image:
 ```
-sloth image -w <width_in_pixels> -h <height_in_pixels> models/Pikachu.obj
+sloth models/Pikachu.obj image -w <width_in_pixels> -h <height_in_pixels>
 ```
 #### You can also generate a portable Javascript render like this:
 ```
-sloth image -j <number_of_frames> -w <width_in_pixels> -h <height_in_pixels> models/Pikachu.obj > src-webify/data.js
+sloth models/Pikachu.obj image -j <number_of_frames> -w <width_in_pixels> -h <height_in_pixels> > src-webify/data.js
 ```
 
 Thank you, contributors!
