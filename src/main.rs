@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<Error>> {
     let input = crossterm.input();
     let mut stdin = input.read_async();
     let cursor = cursor();
-    let mut no_color = true;
+    let no_color = match_no_color_mode(&matches);
     let mut webify = false;
     let mut webify_frame_count = 0;
     let mut webify_todo_frames = 0;
@@ -37,7 +37,6 @@ fn main() -> Result<(), Box<Error>> {
         if let Some(matches) = matches.subcommand_matches("image") {
             match_dimensions(&mut context, &matches)?;
             turntable = match_turntable(matches)?;
-            no_color = match_no_color_mode(matches);
             if let Some(animation_frames) = matches.value_of("frame count") {
                 webify_todo_frames = animation_frames.parse()?;
                 webify = true;
@@ -84,7 +83,7 @@ fn main() -> Result<(), Box<Error>> {
         }
         
         context.flush(!no_color, webify)?; // This prints all framebuffer info
-        stdout().flush().unwrap();
+        stdout().flush()?;
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
         turntable.1 += if webify {
             turntable.3

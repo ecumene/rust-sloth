@@ -78,21 +78,17 @@ impl Context {
                         }
                     }
                 }
+
+                if !self.image {
+                    println!("{}", Attribute::Reset);
+                }
             }
         } else {
             let mut frame = String::from("");
             for pixel in &self.frame_buffer {
                 frame.push(pixel.0);               
             }
-            println!(
-                "{}",
-                frame
-            )
-
-        }
-
-        if !self.image {
-            println!("{}", Attribute::Reset);
+            println!("{}", frame)
         }
 
         Ok(())

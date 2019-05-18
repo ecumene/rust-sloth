@@ -34,9 +34,10 @@ pub fn cli_matches<'a>() -> ArgMatches<'a> {
                     .takes_value(true)
             )))
         .arg(
-            Arg::with_name("INPUT FILENAME")
+            Arg::with_name("input filename(s)")
                 .help("Sets the input file to render")
                 .required(true)
+                .multiple(true)
                 .index(1)
         ))
         .get_matches()
@@ -48,7 +49,7 @@ fn commands_for_subcommands<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
 
 fn command_flag_color<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
     app.arg(
-        Arg::with_name("no_color")
+        Arg::with_name("no color")
             .short("b")
             .help("Flags the rasterizer to render without color")
     )
@@ -88,13 +89,13 @@ pub fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Ve
 
 pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<Error>> {
     let mut mesh_queue: Vec<SimpleMesh> = vec![];
-    for slice in matches.value_of("INPUT FILENAME").unwrap().split(' ') {
+    for slice in matches.value_of("input filename(s)").unwrap().split(' ') {
         let error = |s: &str, e: &str| -> Result<Vec<SimpleMesh>, Box<Error>> {
             Err(format!("filename: [{}] couldn't load, {}. {}", slice, s, e).into())
         };
         // Fill list with file inputs (Splits for spaces -> multiple files)
         let path = Path::new(slice);
-        let mut meshes = match path.extension() {
+        let meshes = match path.extension() {
             None => error("couldn't determine filename extension", ""),
             Some(ext) => match ext.to_str() {
                 None => error("couldn't parse filename extension", ""),
@@ -144,7 +145,7 @@ pub fn match_image_mode(matches: &ArgMatches) -> bool {
 }
 
 pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
-    matches.is_present("no_color")
+    matches.is_present("no color")
 }
 
 pub fn match_dimensions<'a>(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<Error>> {
