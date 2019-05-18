@@ -1,4 +1,5 @@
-use crate::base::{Context, SimpleMesh, Triangle};
+use crate::geometry::{SimpleMesh, Triangle};
+use crate::context::{Context};
 use nalgebra::{Matrix4, Vector4};
 
 pub fn default_shader(shade: f32) -> char {
@@ -79,12 +80,14 @@ pub fn draw_triangle<F>(
                 let id = y * context.width + x * 2;
                 if z < context.z_buffer[id] {
                     context.z_buffer[id] = z;
-                    //let pixel = bg(shader(pixel_shade), dist_triangle.color);
                     let pixel = (shader(pixel_shade), dist_triangle.color);
                     context.frame_buffer[id] = pixel;
                     context.frame_buffer[id + 1] = pixel;
                 }
             }
+        }
+        if context.image {
+            context.frame_buffer[y * context.width + 1] = ('\n', (0, 0, 0));
         }
     }
 }
