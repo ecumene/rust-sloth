@@ -78,10 +78,9 @@ impl Context {
                         }
                     }
                 }
-
-                if !self.image {
-                    println!("{}", Attribute::Reset);
-                }
+            }
+            if !self.image {
+                println!("{}", Attribute::Reset);
             }
         } else {
             let mut frame = String::from("");
