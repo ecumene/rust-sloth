@@ -101,7 +101,7 @@ impl ToSimpleMeshWithMaterial for Mesh {
             tri.v3.y = self.positions[(self.indices[x * 3 + 2] * 3 + 1) as usize];
             tri.v3.z = self.positions[(self.indices[x * 3 + 2] * 3 + 2) as usize];
 
-            if materials.is_empty() {
+            if !materials.is_empty() {
                 let material = &materials[self.material_id.unwrap()];
                 tri.color = (
                     (material.diffuse[0] * 255.0) as u8,
