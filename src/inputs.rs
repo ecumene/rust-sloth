@@ -136,7 +136,7 @@ pub fn match_turntable(matches: &ArgMatches) -> Result<(f32, f32, f32, f32), Box
     } else {
         turntable.3 = 1.0; // No speed defined -> 1.0 rad/s
     }
-    turntable.1 += 3.14159; // All models for some reason are backwards, this fixes that
+    turntable.1 += std::f32::consts::PI; // All models for some reason are backwards, this fixes that
     Ok(turntable)
 }
 
@@ -148,7 +148,7 @@ pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
     matches.is_present("no color")
 }
 
-pub fn match_dimensions<'a>(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<Error>> {
+pub fn match_dimensions(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<Error>> {
     if let Some(x) = matches.value_of("width") {
         context.width = x.parse()?;
         if let Some(y) = matches.value_of("height") {

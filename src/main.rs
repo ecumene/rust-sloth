@@ -51,22 +51,18 @@ fn main() -> Result<(), Box<Error>> {
 
     if webify {
         println!("let frames = [");
-        turntable.3 = (2.0 * 3.14159) * (1.0 / webify_todo_frames as f32);
+        turntable.3 = (2.0 * f32::consts::PI) * (1.0 / webify_todo_frames as f32);
     }
     let mut last_time; // Used in the variable time step
     loop {
         last_time = Instant::now();
         if !context.image {
             if let Some(b) = stdin.next() {
-                match b {
-                    InputEvent::Keyboard(event) => match event {
-                        KeyEvent::Char('q') => {
-                            cursor.show()?;
-                            break;
-                        },
-                        _ => {}
-                    },
-                    _ => {}
+                if let InputEvent::Keyboard(event) = b {
+                    if let KeyEvent::Char('q') = event {
+                        cursor.show()?;
+                        break;
+                    }
                 }
             }
         }

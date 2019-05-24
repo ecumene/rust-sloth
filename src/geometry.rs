@@ -65,7 +65,7 @@ pub trait ToSimpleMesh {
 }
 
 pub trait ToSimpleMeshWithMaterial {
-    fn to_simple_mesh_with_materials(&self, materials: &Vec<Material>) -> SimpleMesh;
+    fn to_simple_mesh_with_materials(&self, materials: &[Material]) -> SimpleMesh;
 }
 
 pub struct SimpleMesh {
@@ -74,7 +74,7 @@ pub struct SimpleMesh {
 }
 
 impl ToSimpleMeshWithMaterial for Mesh {
-    fn to_simple_mesh_with_materials(&self, materials: &Vec<Material>) -> SimpleMesh {
+    fn to_simple_mesh_with_materials(&self, materials: &[Material]) -> SimpleMesh {
         let mut bounding_box = AABB {
             // This is the general bounding box for the mesh
             min: Vector4::new(0.0, 0.0, 0.0, 1.0),
@@ -101,8 +101,8 @@ impl ToSimpleMeshWithMaterial for Mesh {
             tri.v3.y = self.positions[(self.indices[x * 3 + 2] * 3 + 1) as usize];
             tri.v3.z = self.positions[(self.indices[x * 3 + 2] * 3 + 2) as usize];
 
-            if materials.len() > 0 {
-                let material = &materials[*&self.material_id.unwrap()];
+            if materials.is_empty() {
+                let material = &materials[self.material_id.unwrap()];
                 tri.color = (
                     (material.diffuse[0] * 255.0) as u8,
                     (material.diffuse[1] * 255.0) as u8,
@@ -127,7 +127,7 @@ impl ToSimpleMeshWithMaterial for Mesh {
 
 impl ToSimpleMesh for Mesh {
     fn to_simple_mesh(&self) -> SimpleMesh {
-        self.to_simple_mesh_with_materials(&vec![])
+        self.to_simple_mesh_with_materials(&[])
     }
 }
 
@@ -151,11 +151,12 @@ impl ToSimpleMesh for stl_io::IndexedMesh {
             };
             self.faces.len()
         ];
-        for i in 0..self.faces.len() {
-            triangles[i].v1 = stlv2v4(self.vertices[self.faces[i].vertices[0]]);
-            triangles[i].v2 = stlv2v4(self.vertices[self.faces[i].vertices[1]]);
-            triangles[i].v3 = stlv2v4(self.vertices[self.faces[i].vertices[2]]);
-            let aabb = triangles[i].to_aabb();
+        #[allow(clippy::needless_range_loop)] // We need an index number, to get the triangle's index too
+        for t_index in 0..self.faces.len() {
+            triangles[t_index].v1 = stlv2v4(self.vertices[self.faces[t_index].vertices[0]]);
+            triangles[t_index].v2 = stlv2v4(self.vertices[self.faces[t_index].vertices[1]]);
+            triangles[t_index].v3 = stlv2v4(self.vertices[self.faces[t_index].vertices[2]]);
+            let aabb = triangles[t_index].to_aabb();
             bounding_box.min.x = aabb.min.x.min(bounding_box.min.x);
             bounding_box.min.y = aabb.min.y.min(bounding_box.min.y);
             bounding_box.min.z = aabb.min.z.min(bounding_box.min.z);

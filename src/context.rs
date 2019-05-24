@@ -24,7 +24,7 @@ impl Context {
             height: 0,
             frame_buffer: vec![],
             z_buffer: vec![],
-            image: image
+            image
         }
     }
     pub fn clear(&mut self) {
