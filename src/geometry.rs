@@ -151,7 +151,8 @@ impl ToSimpleMesh for stl_io::IndexedMesh {
             };
             self.faces.len()
         ];
-        #[allow(clippy::needless_range_loop)] // We need an index number, to get the triangle's index too
+        #[allow(clippy::needless_range_loop)]
+        // We need an index number, to get the triangle's index too
         for t_index in 0..self.faces.len() {
             triangles[t_index].v1 = stlv2v4(self.vertices[self.faces[t_index].vertices[0]]);
             triangles[t_index].v2 = stlv2v4(self.vertices[self.faces[t_index].vertices[1]]);

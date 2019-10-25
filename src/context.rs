@@ -10,7 +10,7 @@ pub struct Context {
     pub height: usize,
     pub frame_buffer: Vec<(char, (u8, u8, u8))>,
     pub z_buffer: Vec<f32>,
-    pub image: bool
+    pub image: bool,
 }
 
 impl Context {
@@ -24,16 +24,18 @@ impl Context {
             height: 0,
             frame_buffer: vec![],
             z_buffer: vec![],
-            image
+            image,
         }
     }
     pub fn clear(&mut self) {
-        self.frame_buffer = vec![(' ', (0, 0, 0));
+        self.frame_buffer = vec![
+            (' ', (0, 0, 0));
             if self.image {
                 self.width * self.height + self.height
             } else {
                 self.width * self.height
-            } as usize];
+            } as usize
+        ];
         self.z_buffer = vec![f32::MAX; self.width * self.height as usize]; //f32::MAX is written to the z-buffer as an infinite back-wall to render with
     }
     pub fn camera(&mut self, proj: Matrix4<f32>, view: Matrix4<f32>) -> &Matrix4<f32> {
@@ -58,7 +60,10 @@ impl Context {
                         if webify {
                             print!(
                                 "<span style=\"color:rgb({},{},{})\">{}",
-                                (pixel.1).0, (pixel.1).1, (pixel.1).2, pixel.0
+                                (pixel.1).0,
+                                (pixel.1).1,
+                                (pixel.1).2,
+                                pixel.0
                             )
                         } else {
                             print!(
@@ -85,7 +90,7 @@ impl Context {
         } else {
             let mut frame = String::from("");
             for pixel in &self.frame_buffer {
-                frame.push(pixel.0);               
+                frame.push(pixel.0);
             }
             println!("{}", frame)
         }
