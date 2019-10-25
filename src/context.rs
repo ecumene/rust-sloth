@@ -42,7 +42,7 @@ impl Context {
         self.utransform = proj * view;
         &self.utransform
     }
-    pub fn flush(&self, color: bool, webify: bool) -> Result<(), Box<Error>> {
+    pub fn flush(&self, color: bool, webify: bool) -> Result<(), Box<dyn Error>> {
         let mut prev_color = None;
 
         if !self.image {
@@ -101,7 +101,7 @@ impl Context {
         &mut self,
         mut old_size: (u16, u16),
         meshes: &[SimpleMesh],
-    ) -> Result<(), Box<Error>> {
+    ) -> Result<(), Box<dyn Error>> {
         let terminal = terminal();
         let terminal_size = if self.image {
             (self.width as u16, self.height as u16)

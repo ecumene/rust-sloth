@@ -91,10 +91,10 @@ pub fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Ve
     meshes
 }
 
-pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<Error>> {
+pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<dyn Error>> {
     let mut mesh_queue: Vec<SimpleMesh> = vec![];
     for slice in matches.value_of("input filename(s)").unwrap().split(' ') {
-        let error = |s: &str, e: &str| -> Result<Vec<SimpleMesh>, Box<Error>> {
+        let error = |s: &str, e: &str| -> Result<Vec<SimpleMesh>, Box<dyn Error>> {
             Err(format!("filename: [{}] couldn't load, {}. {}", slice, s, e).into())
         };
         // Fill list with file inputs (Splits for spaces -> multiple files)
@@ -124,7 +124,7 @@ pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<Error>>
     Ok(mesh_queue)
 }
 
-pub fn match_turntable(matches: &ArgMatches) -> Result<(f32, f32, f32, f32), Box<Error>> {
+pub fn match_turntable(matches: &ArgMatches) -> Result<(f32, f32, f32, f32), Box<dyn Error>> {
     let mut turntable = (0.0, 0.0, 0.0, 0.0);
     if let Some(x) = matches.value_of("x") {
         turntable.0 = x.parse()?;
@@ -152,7 +152,7 @@ pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
     matches.is_present("no color")
 }
 
-pub fn match_dimensions(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<Error>> {
+pub fn match_dimensions(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
     if let Some(x) = matches.value_of("width") {
         context.width = x.parse()?;
         if let Some(y) = matches.value_of("height") {

@@ -18,7 +18,7 @@ pub use rasterizer::*;
 pub mod inputs;
 pub use inputs::*;
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = cli_matches(); // Read command line arguments
 
     let mesh_queue: Vec<SimpleMesh> = match_meshes(&matches)?; // A list of meshes to render
