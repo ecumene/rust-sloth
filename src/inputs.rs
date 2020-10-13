@@ -104,7 +104,7 @@ pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<dyn Err
             Some(ext) => match ext.to_str() {
                 None => error("couldn't parse filename extension", ""),
                 Some(extstr) => match &*extstr.to_lowercase() {
-                    "obj" => match tobj::load_obj(&path) {
+                    "obj" => match tobj::load_obj(&path, true) {
                         Err(e) => error("tobj couldnt load/parse OBJ", &e.to_string()),
                         Ok(present) => Ok(to_meshes(present.0, present.1)),
                     },
