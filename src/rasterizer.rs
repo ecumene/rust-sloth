@@ -1,5 +1,5 @@
+use crate::context::Context;
 use crate::geometry::{SimpleMesh, Triangle};
-use crate::context::{Context};
 use nalgebra::{Matrix4, Vector4};
 
 pub fn default_shader(shade: f32) -> char {

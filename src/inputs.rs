@@ -1,46 +1,50 @@
+use crate::context::Context;
+use crate::geometry::{SimpleMesh, ToSimpleMesh, ToSimpleMeshWithMaterial};
 use clap::{App, Arg, ArgMatches, SubCommand};
-use crate::geometry::{SimpleMesh, ToSimpleMeshWithMaterial, ToSimpleMesh};
-use crate::context::{Context};
+use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::Path;
-use std::error::Error;
 
 pub fn cli_matches<'a>() -> ArgMatches<'a> {
-    commands_for_subcommands(App::new("Sloth")
-        .version("0.1")
-        .author("Mitchell Hynes. <mshynes@mun.ca>")
-        .about("A toy for rendering 3D objects in the command line")
-        .subcommand(commands_for_subcommands(SubCommand::with_name("image")
-            .about("Generates a colorless terminal output as lines of text")
-            .author("Mitchell Hynes <mitchell.hynes@ecumene.xyz>")
+    commands_for_subcommands(
+        App::new("Sloth")
+            .version("0.1")
+            .author("Mitchell Hynes. <mshynes@mun.ca>")
+            .about("A toy for rendering 3D objects in the command line")
+            .subcommand(commands_for_subcommands(
+                SubCommand::with_name("image")
+                    .about("Generates a colorless terminal output as lines of text")
+                    .author("Mitchell Hynes <mitchell.hynes@ecumene.xyz>")
+                    .arg(
+                        Arg::with_name("frame count")
+                            .short("j")
+                            .long("webify")
+                            .help("Generates a portable JS based render of your object for the web")
+                            .takes_value(true),
+                    )
+                    .arg(
+                        Arg::with_name("width")
+                            .short("w")
+                            .help("Sets the width of the image to generate")
+                            .takes_value(true)
+                            .required(true),
+                    )
+                    .arg(
+                        Arg::with_name("height")
+                            .short("h")
+                            .help("Sets the height of the image to generate")
+                            .takes_value(true),
+                    ),
+            ))
             .arg(
-                Arg::with_name("frame count")
-                    .short("j")
-                    .long("webify")
-                    .help("Generates a portable JS based render of your object for the web")
-                    .takes_value(true)
-            )
-            .arg(
-                Arg::with_name("width")
-                    .short("w")
-                    .help("Sets the width of the image to generate")
-                    .takes_value(true)
+                Arg::with_name("input filename(s)")
+                    .help("Sets the input file to render")
                     .required(true)
-            )
-            .arg(
-                Arg::with_name("height")
-                    .short("h")
-                    .help("Sets the height of the image to generate")
-                    .takes_value(true)
-            )))
-        .arg(
-            Arg::with_name("input filename(s)")
-                .help("Sets the input file to render")
-                .required(true)
-                .multiple(true)
-                .index(1)
-        ))
-        .get_matches()
+                    .multiple(true)
+                    .index(1),
+            ),
+    )
+    .get_matches()
 }
 
 fn commands_for_subcommands<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
@@ -51,7 +55,7 @@ fn command_flag_color<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
     app.arg(
         Arg::with_name("no color")
             .short("b")
-            .help("Flags the rasterizer to render without color")
+            .help("Flags the rasterizer to render without color"),
     )
 }
 
@@ -61,21 +65,21 @@ fn command_rotates<'a, 'b>(app: App<'a, 'b>) -> App<'a, 'b> {
             .short("x")
             .long("yaw")
             .help("Sets the object's static X rotation (in radians)")
-            .takes_value(true)
+            .takes_value(true),
     )
     .arg(
         Arg::with_name("y")
             .short("y")
             .long("pitch")
             .help("Sets the object's static Y rotation (in radians)")
-            .takes_value(true)
+            .takes_value(true),
     )
     .arg(
         Arg::with_name("z")
             .short("z")
             .long("roll")
             .help("Sets the object's static Z rotation (in radians)")
-            .takes_value(true)
+            .takes_value(true),
     )
 }
 
@@ -122,10 +126,10 @@ pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<Error>>
 
 pub fn match_turntable(matches: &ArgMatches) -> Result<(f32, f32, f32, f32), Box<Error>> {
     let mut turntable = (0.0, 0.0, 0.0, 0.0);
-    if let Some(x) = matches.value_of("x")  {
+    if let Some(x) = matches.value_of("x") {
         turntable.0 = x.parse()?;
     }
-    if let Some(y) = matches.value_of("y")  {
+    if let Some(y) = matches.value_of("y") {
         turntable.1 = y.parse()?;
     }
     if let Some(z) = matches.value_of("z") {
