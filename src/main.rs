@@ -1,6 +1,6 @@
 use crossterm::{
     cursor,
-    event::{poll, read, Event, KeyCode, KeyEvent},
+    event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers},
     ExecutableCommand,
 };
 use std::error::Error;
@@ -61,8 +61,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         last_time = Instant::now();
         if !context.image {
             if poll(target_frame_time - last_time.elapsed())? {
-                if let Event::Key(KeyEvent { code, .. }) = read()? {
-                    if code == KeyCode::Char('q') {
+                if let Event::Key(KeyEvent { code, modifiers }) = read()? {
+                    if code == KeyCode::Char('q')
+                        || (code == KeyCode::Char('c') && (modifiers == KeyModifiers::CONTROL))
+                    {
                         stdout.execute(cursor::Show)?;
                         crossterm::terminal::disable_raw_mode()?;
                         break;

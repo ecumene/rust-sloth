@@ -1,8 +1,8 @@
 use crate::geometry::SimpleMesh;
 use crossterm::{
     cursor,
-    style::{style, Attribute, Color, Colored, Print, PrintStyledContent},
-    terminal, ExecutableCommand, QueueableCommand,
+    style::{style, Color, PrintStyledContent},
+    terminal, QueueableCommand,
 };
 use nalgebra::Matrix4;
 use std::error::Error;
