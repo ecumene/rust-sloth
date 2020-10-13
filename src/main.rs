@@ -6,7 +6,7 @@ use crossterm::{
 use std::error::Error;
 use std::f32;
 use std::io::{stdout, Write};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use nalgebra::Rotation3;
 
@@ -24,6 +24,9 @@ pub use inputs::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = cli_matches(); // Read command line arguments
+
+    let fps_cap = 500.0;
+    let target_frame_time = Duration::from_secs_f64(1.0 / fps_cap);
 
     let mesh_queue: Vec<SimpleMesh> = match_meshes(&matches)?; // A list of meshes to render
     let mut turntable = match_turntable(&matches)?;
