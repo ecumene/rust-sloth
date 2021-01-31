@@ -1,8 +1,13 @@
 use crate::geometry::SimpleMesh;
-use crossterm::{cursor, terminal, Attribute, Color, Colored};
+use crossterm::{
+    cursor,
+    style::{style, Color, PrintStyledContent},
+    terminal, QueueableCommand,
+};
 use nalgebra::Matrix4;
 use std::error::Error;
 use std::f32;
+use std::io::stdout;
 
 pub struct Context {
     pub utransform: Matrix4<f32>,
@@ -15,6 +20,7 @@ pub struct Context {
 
 impl Context {
     pub fn blank(image: bool) -> Context {
+        //TODO: Make this a constant struct
         Context {
             utransform: Matrix4::new(
                 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
@@ -42,56 +48,44 @@ impl Context {
         &self.utransform
     }
     pub fn flush(&self, color: bool, webify: bool) -> Result<(), Box<dyn Error>> {
-        let mut prev_color = None;
+        let mut stdout = stdout();
 
         if !self.image {
-            cursor().goto(0, 0)?;
+            stdout.queue(cursor::MoveTo(0, 0))?;
         }
 
-        if color {
-            for pixel in &self.frame_buffer {
-                match prev_color {
-                    Some(c) if c == pixel.1 => {
-                        print!("{}", pixel.0);
-                    }
-                    _ => {
-                        prev_color = Some(pixel.1);
-                        if webify {
-                            print!(
-                                "<span style=\"color:rgb({},{},{})\">{}",
-                                (pixel.1).0,
-                                (pixel.1).1,
-                                (pixel.1).2,
-                                pixel.0
-                            )
-                        } else {
-                            print!(
-                                "{}{}{}",
-                                Colored::Fg(Color::Rgb {
-                                    r: (pixel.1).0,
-                                    g: (pixel.1).1,
-                                    b: (pixel.1).2
-                                }),
-                                Colored::Bg(Color::Rgb {
-                                    r: 25,
-                                    g: 25,
-                                    b: 25
-                                }),
-                                pixel.0
-                            )
-                        }
-                    }
+        match (color, webify) {
+            (false, _) => {
+                let frame: String = self.frame_buffer.iter().map(|pixel| pixel.0).collect();
+                println!("{}", frame);
+            }
+            (true, false) => {
+                for pixel in &self.frame_buffer {
+                    let styled = style(pixel.0)
+                        .with(Color::Rgb {
+                            r: (pixel.1).0,
+                            g: (pixel.1).1,
+                            b: (pixel.1).2,
+                        })
+                        .on(Color::Rgb {
+                            r: 25,
+                            g: 25,
+                            b: 25,
+                        });
+                    stdout.queue(PrintStyledContent(styled))?;
                 }
             }
-            if !self.image {
-                println!("{}", Attribute::Reset);
+            (true, true) => {
+                for pixel in &self.frame_buffer {
+                    print!(
+                        "<span style=\"color:rgb({},{},{})\">{}",
+                        (pixel.1).0,
+                        (pixel.1).1,
+                        (pixel.1).2,
+                        pixel.0
+                    );
+                }
             }
-        } else {
-            let mut frame = String::from("");
-            for pixel in &self.frame_buffer {
-                frame.push(pixel.0);
-            }
-            println!("{}", frame)
         }
 
         Ok(())
@@ -101,16 +95,14 @@ impl Context {
         mut old_size: (u16, u16),
         meshes: &[SimpleMesh],
     ) -> Result<(), Box<dyn Error>> {
-        let terminal = terminal();
         let terminal_size = if self.image {
             (self.width as u16, self.height as u16)
         } else {
-            terminal.terminal_size()
+            terminal::size()?
         };
 
         if old_size != terminal_size {
             old_size = terminal_size; // It changed! Set new size
-            old_size.0 += 1;
             let mut scale: f32 = 0.0; // The scene's scale
             for mesh in meshes {
                 // This calculates the maximum axis value (x y or z) in all meshes
