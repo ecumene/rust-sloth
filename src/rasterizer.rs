@@ -1,5 +1,5 @@
+use crate::context::Context;
 use crate::geometry::{SimpleMesh, Triangle};
-use crate::context::{Context};
 use nalgebra::{Matrix4, Vector4};
 
 pub fn default_shader(shade: f32) -> char {
@@ -55,7 +55,7 @@ pub fn draw_triangle<F>(
 {
     let mut dist_triangle = triangle.clone();
     dist_triangle.mul(context.utransform * transform);
-    let aabb = dist_triangle.to_aabb(); // Calculate triangle bounds
+    let aabb = dist_triangle.aabb(); // Calculate triangle bounds
     let mins: (usize, usize) = (
         aabb.min[0].max(1.0).ceil() as usize,
         aabb.min[1].max(1.0).ceil() as usize,

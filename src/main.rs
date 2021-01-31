@@ -18,9 +18,8 @@ pub use rasterizer::*;
 pub mod inputs;
 pub use inputs::*;
 
-fn main() -> Result<(), Box<Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let matches = cli_matches(); // Read command line arguments
-    
     let mesh_queue: Vec<SimpleMesh> = match_meshes(&matches)?; // A list of meshes to render
     let mut turntable = match_turntable(&matches)?;
     let crossterm = Crossterm::new();
@@ -66,7 +65,8 @@ fn main() -> Result<(), Box<Error>> {
                 }
             }
         }
-        let rot = Rotation3::from_euler_angles(turntable.0, turntable.1, turntable.2).to_homogeneous();
+        let rot =
+            Rotation3::from_euler_angles(turntable.0, turntable.1, turntable.2).to_homogeneous();
         context.update(size, &mesh_queue)?; // This checks for if there needs to be a context update
         context.clear(); // This clears the z and frame buffer
         for mesh in &mesh_queue {
@@ -77,7 +77,6 @@ fn main() -> Result<(), Box<Error>> {
         if webify {
             println!("`");
         }
-        
         context.flush(!no_color, webify)?; // This prints all framebuffer info
         stdout().flush()?;
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
@@ -94,7 +93,7 @@ fn main() -> Result<(), Box<Error>> {
             } else {
                 println!("`,");
             }
-            webify_frame_count+=1;
+            webify_frame_count += 1;
         }
 
         if context.image && !webify {
