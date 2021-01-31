@@ -1,8 +1,12 @@
-use crossterm::{cursor, Crossterm, InputEvent, KeyEvent, RawScreen};
+use crossterm::{
+    cursor,
+    event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers},
+    ExecutableCommand,
+};
 use std::error::Error;
 use std::f32;
 use std::io::{stdout, Write};
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use nalgebra::Rotation3;
 
@@ -20,12 +24,13 @@ pub use inputs::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = cli_matches(); // Read command line arguments
+
+    let fps_cap = 500.0;
+    let target_frame_time = Duration::from_secs_f64(1.0 / fps_cap);
+
     let mesh_queue: Vec<SimpleMesh> = match_meshes(&matches)?; // A list of meshes to render
     let mut turntable = match_turntable(&matches)?;
-    let crossterm = Crossterm::new();
-    let input = crossterm.input();
-    let mut stdin = input.read_async();
-    let cursor = cursor();
+    let mut stdout = stdout();
     let no_color = match_no_color_mode(&matches);
     let mut webify = false;
     let mut webify_frame_count = 0;
@@ -42,9 +47,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         }
     } else {
-        #[allow(unused)]
-        RawScreen::into_raw_mode()?;
-        cursor.hide()?;
+        crossterm::terminal::enable_raw_mode()?;
+        stdout.execute(cursor::Hide)?;
     }
     let size: (u16, u16) = (0, 0); // This is the terminal size, it's used to check when a new context must be made
 
@@ -56,15 +60,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         last_time = Instant::now();
         if !context.image {
-            if let Some(b) = stdin.next() {
-                if let InputEvent::Keyboard(event) = b {
-                    if let KeyEvent::Char('q') = event {
-                        cursor.show()?;
+            if poll(target_frame_time - last_time.elapsed())? {
+                if let Event::Key(KeyEvent { code, modifiers }) = read()? {
+                    if code == KeyCode::Char('q')
+                        || (code == KeyCode::Char('c') && (modifiers == KeyModifiers::CONTROL))
+                    {
+                        stdout.execute(cursor::Show)?;
+                        crossterm::terminal::disable_raw_mode()?;
                         break;
                     }
                 }
             }
         }
+
         let rot =
             Rotation3::from_euler_angles(turntable.0, turntable.1, turntable.2).to_homogeneous();
         context.update(size, &mesh_queue)?; // This checks for if there needs to be a context update
@@ -77,8 +85,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         if webify {
             println!("`");
         }
+
         context.flush(!no_color, webify)?; // This prints all framebuffer info
-        stdout().flush()?;
+        stdout.flush()?;
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
         turntable.1 += if webify {
             turntable.3

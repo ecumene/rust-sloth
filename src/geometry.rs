@@ -2,7 +2,7 @@ use nalgebra::{Matrix4, Unit, Vector4};
 use std::clone::Clone;
 use tobj::{Material, Mesh};
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Debug)]
 pub struct AABB {
     pub min: Vector4<f32>,
     pub max: Vector4<f32>,
@@ -49,8 +49,10 @@ impl Triangle {
     pub fn normal(&self) -> Unit<Vector4<f32>> {
         let v1 = self.v2 - self.v1;
         let v2 = self.v3 - self.v1;
-        let n = v1.xyz().cross(&v2.xyz());
-        Unit::new_normalize(n.push(0.0))
+        let x = (v1[1] * v2[2]) - (v1[2] * v2[1]);
+        let y = (v1[2] * v2[0]) - (v1[0] * v2[2]);
+        let z = (v1[0] * v2[1]) - (v1[1] * v2[0]);
+        Unit::new_normalize(Vector4::new(x, y, z, 0.0))
     }
 }
 
@@ -81,13 +83,11 @@ pub struct SimpleMesh {
 impl ToSimpleMeshWithMaterial for Mesh {
     fn to_simple_mesh_with_materials(&self, materials: &[Material]) -> SimpleMesh {
         let mut bounding_box = AABB {
-            // This is the general bounding box for the mesh
             min: Vector4::new(0.0, 0.0, 0.0, 1.0),
             max: Vector4::new(0.0, 0.0, 0.0, 1.0),
         };
         let mut triangles = vec![
             Triangle {
-                // Repeat this triangle for all faces in polygon
                 color: (1, 1, 1),
                 v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
                 v2: Vector4::new(0.0, 0.0, 0.0, 1.0),
