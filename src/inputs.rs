@@ -1,10 +1,10 @@
 use crate::context::Context;
 use crate::geometry::{SimpleMesh, ToSimpleMesh, ToSimpleMeshWithMaterial};
 use clap::{App, Arg, ArgMatches, SubCommand};
-use tobj::LoadOptions;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::Path;
+use tobj::LoadOptions;
 
 pub fn cli_matches<'a>() -> ArgMatches<'a> {
     commands_for_subcommands(
@@ -105,10 +105,12 @@ pub fn match_meshes(matches: &ArgMatches) -> Result<Vec<SimpleMesh>, Box<dyn Err
             Some(ext) => match ext.to_str() {
                 None => error("couldn't parse filename extension", ""),
                 Some(extstr) => match &*extstr.to_lowercase() {
-                    
                     "obj" => match tobj::load_obj(&path, &tobj::GPU_LOAD_OPTIONS) {
                         Err(e) => error("tobj couldnt load/parse OBJ", &e.to_string()),
-                        Ok(present) => Ok(to_meshes(present.0, present.1.expect("Expected to have materials."))),
+                        Ok(present) => Ok(to_meshes(
+                            present.0,
+                            present.1.expect("Expected to have materials."),
+                        )),
                     },
                     "stl" => match OpenOptions::new().read(true).open(&path) {
                         Err(e) => error("STL load failed", &e.to_string()),

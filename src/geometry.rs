@@ -113,14 +113,14 @@ impl ToSimpleMeshWithMaterial for Mesh {
                     (material.diffuse[1] * 255.0) as u8,
                     (material.diffuse[2] * 255.0) as u8,
                 );
-                
+
                 // Check if the model contains vertex colors.
                 if !self.vertex_color.is_empty() {
                     // Get the vertex_color from the first indice in the tri.
                     let color = (
                         (self.vertex_color[(self.indices[x * 3] * 3) as usize] * 255.0) as u8,
-                        (self.vertex_color[(self.indices[x * 3] * 3 + 1) as usize] * 255.0) as u8, 
-                        (self.vertex_color[(self.indices[x * 3] * 3 + 2) as usize] * 255.0) as u8
+                        (self.vertex_color[(self.indices[x * 3] * 3 + 1) as usize] * 255.0) as u8,
+                        (self.vertex_color[(self.indices[x * 3] * 3 + 2) as usize] * 255.0) as u8,
                     );
                     tri.color = color;
                 }
