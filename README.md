@@ -2,7 +2,7 @@
 ![pikachu](models/demo/pikachu.gif)
   
 A one-of-a-kind command line 3D software rasterizer made with termion, tobj, and nalgebra. Currently it 
-supports OBJ file formats without textures.
+supports OBJ file formats without textures. It also supports OBJ file formats with vertex colors.
 
 [Javascript Export Demonstration](http://ecumene.xyz/sloth-demo)
 
