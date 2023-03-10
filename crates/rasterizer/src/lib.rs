@@ -1,6 +1,13 @@
-use crate::context::Context;
-use crate::geometry::{SimpleMesh, Triangle};
-use nalgebra::{Matrix4, Vector4};
+mod context;
+mod geom;
+
+pub use context::{Context, Framebuffer};
+pub use geom::{SimpleMesh, Triangle};
+pub use glam::{Mat4, Vec4};
+use std::error::Error;
+
+pub use context::*;
+pub use geom::*;
 
 pub fn default_shader(shade: f32) -> char {
     if shade <= 0.20 {
@@ -27,7 +34,7 @@ pub fn default_shader(shade: f32) -> char {
 }
 
 // Used in rasterization
-fn orient(a: &Vector4<f32>, b: &Vector4<f32>, c: &Vector4<f32>) -> f32 {
+fn orient(a: &Vec4, b: &Vec4, c: &Vec4) -> f32 {
     (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
 }
 
@@ -36,7 +43,7 @@ fn orient_triangle(triangle: &Triangle) -> f32 {
 }
 
 // Writes multiple meshes to context
-pub fn draw_mesh<F>(context: &mut Context, mesh: &SimpleMesh, transform: Matrix4<f32>, shader: F)
+pub fn draw_mesh<F>(context: &mut Context, mesh: &SimpleMesh, transform: Mat4, shader: F)
 where
     F: Fn(f32) -> char,
 {
@@ -45,12 +52,8 @@ where
     }
 }
 
-pub fn draw_triangle<F>(
-    context: &mut Context,
-    triangle: &Triangle,
-    transform: Matrix4<f32>,
-    shader: F,
-) where
+pub fn draw_triangle<F>(context: &mut Context, triangle: &Triangle, transform: Mat4, shader: F)
+where
     F: Fn(f32) -> char,
 {
     let mut dist_triangle = triangle.clone();
@@ -68,7 +71,7 @@ pub fn draw_triangle<F>(
 
     for y in mins.1..maxs.1 {
         for x in mins.0..maxs.0 {
-            let p = Vector4::new(x as f32, y as f32, 0.0, 0.0);
+            let p = Vec4::new(x as f32, y as f32, 0.0, 0.0);
             let w0 = orient(&dist_triangle.v2, &dist_triangle.v3, &p);
             let w1 = orient(&dist_triangle.v3, &dist_triangle.v1, &p);
             let w2 = orient(&dist_triangle.v1, &dist_triangle.v2, &p);
@@ -86,8 +89,26 @@ pub fn draw_triangle<F>(
                 }
             }
         }
-        if context.image {
-            context.frame_buffer[y * context.width + 1] = ('\n', (0, 0, 0));
-        }
     }
+
+    println!("{:?}", dist_triangle);
+}
+
+pub fn draw_all(
+    context: &mut Context,
+    transform: Mat4,
+    mesh_queue: Vec<SimpleMesh>,
+    color: bool,
+    webify: bool,
+) -> Result<(), Box<dyn Error>> {
+    let size: (u16, u16) = (100, 100);
+
+    context.update(size, &mesh_queue)?;
+    context.clear();
+
+    for mesh in &mesh_queue {
+        draw_mesh(context, &mesh, transform, default_shader);
+    }
+
+    Ok(())
 }

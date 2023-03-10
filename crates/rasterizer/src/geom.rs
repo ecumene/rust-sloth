@@ -1,15 +1,16 @@
-use nalgebra::{Matrix4, Unit, Vector4};
+#![allow(dead_code)]
+use glam::{Mat4, Vec4};
 use std::clone::Clone;
 use tobj::{Material, Mesh};
 
 #[derive(PartialEq, Debug)]
 pub struct AABB {
-    pub min: Vector4<f32>,
-    pub max: Vector4<f32>,
+    pub min: Vec4,
+    pub max: Vec4,
 }
 
 impl AABB {
-    pub fn new(min: Vector4<f32>, max: Vector4<f32>) -> AABB {
+    pub fn new(min: Vec4, max: Vec4) -> AABB {
         AABB { min, max }
     }
 }
@@ -17,18 +18,18 @@ impl AABB {
 #[derive(PartialEq, Debug)]
 pub struct Triangle {
     pub color: (u8, u8, u8),
-    pub v1: Vector4<f32>,
-    pub v2: Vector4<f32>,
-    pub v3: Vector4<f32>,
+    pub v1: Vec4,
+    pub v2: Vec4,
+    pub v3: Vec4,
 }
 
 impl Default for Triangle {
     fn default() -> Self {
         Self {
             color: (1, 0, 0),
-            v1: Vector4::new(1.0, -1.0, -1.0, 1.0),
-            v2: Vector4::new(-1.0, -1.0, 1.0, 1.0),
-            v3: Vector4::new(1.0, 1.0, -1.0, 1.0),
+            v1: Vec4::new(1.0, -1.0, -1.0, 1.0),
+            v2: Vec4::new(-1.0, -1.0, 1.0, 1.0),
+            v3: Vec4::new(1.0, 1.0, -1.0, 1.0),
         }
     }
 }
@@ -36,23 +37,33 @@ impl Default for Triangle {
 impl Triangle {
     pub fn aabb(&self) -> AABB {
         AABB::new(
-            Vector4::from_fn(|x, _size| self.v1[x].min(self.v2[x].min(self.v3[x]))),
-            Vector4::from_fn(|x, _size| self.v1[x].max(self.v2[x].max(self.v3[x]))),
+            Vec4::new(
+                self.v1[0].min(self.v2[0].min(self.v3[0])),
+                self.v1[1].min(self.v2[1].min(self.v3[1])),
+                self.v1[2].min(self.v2[2].min(self.v3[2])),
+                1.0,
+            ),
+            Vec4::new(
+                self.v1[0].max(self.v2[0].max(self.v3[0])),
+                self.v1[1].max(self.v2[1].max(self.v3[1])),
+                self.v1[2].max(self.v2[2].max(self.v3[2])),
+                1.0,
+            ),
         )
     }
-    pub fn mul(&mut self, transform: Matrix4<f32>) -> &mut Triangle {
+    pub fn mul(&mut self, transform: Mat4) -> &mut Triangle {
         self.v1 = transform * self.v1;
         self.v2 = transform * self.v2;
         self.v3 = transform * self.v3;
         self
     }
-    pub fn normal(&self) -> Unit<Vector4<f32>> {
+    pub fn normal(&self) -> Vec4 {
         let v1 = self.v2 - self.v1;
         let v2 = self.v3 - self.v1;
         let x = (v1[1] * v2[2]) - (v1[2] * v2[1]);
         let y = (v1[2] * v2[0]) - (v1[0] * v2[2]);
         let z = (v1[0] * v2[1]) - (v1[1] * v2[0]);
-        Unit::new_normalize(Vector4::new(x, y, z, 0.0))
+        Vec4::new(x, y, z, 0.0)
     }
 }
 
@@ -83,15 +94,15 @@ pub struct SimpleMesh {
 impl ToSimpleMeshWithMaterial for Mesh {
     fn to_simple_mesh_with_materials(&self, materials: &[Material]) -> SimpleMesh {
         let mut bounding_box = AABB {
-            min: Vector4::new(0.0, 0.0, 0.0, 1.0),
-            max: Vector4::new(0.0, 0.0, 0.0, 1.0),
+            min: Vec4::new(0.0, 0.0, 0.0, 1.0),
+            max: Vec4::new(0.0, 0.0, 0.0, 1.0),
         };
         let mut triangles = vec![
             Triangle {
                 color: (1, 1, 1),
-                v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v2: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v3: Vector4::new(0.0, 0.0, 0.0, 1.0)
+                v1: Vec4::new(0.0, 0.0, 0.0, 1.0),
+                v2: Vec4::new(0.0, 0.0, 0.0, 1.0),
+                v3: Vec4::new(0.0, 0.0, 0.0, 1.0)
             };
             self.indices.len() / 3
         ];
@@ -147,47 +158,6 @@ impl ToSimpleMesh for Mesh {
     }
 }
 
-/// Convert stl_io IndexedMesh into Sloth style triangles.
-impl ToSimpleMesh for stl_io::IndexedMesh {
-    fn to_simple_mesh(&self) -> SimpleMesh {
-        let mut bounding_box = AABB {
-            min: Vector4::new(std::f32::MAX, std::f32::MAX, std::f32::MAX, 1.0),
-            max: Vector4::new(std::f32::MIN, std::f32::MIN, std::f32::MIN, 1.0),
-        };
-        fn stlv2v4(stlio_vec: [f32; 3]) -> Vector4<f32> {
-            Vector4::new(stlio_vec[0], stlio_vec[1], stlio_vec[2], 1.0)
-        }
-        let mut triangles = vec![
-            Triangle {
-                // at time of writing, stl_io lacked color
-                color: (0xFF, 0xFF, 0x00),
-                v1: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v2: Vector4::new(0.0, 0.0, 0.0, 1.0),
-                v3: Vector4::new(0.0, 0.0, 0.0, 1.0)
-            };
-            self.faces.len()
-        ];
-        #[allow(clippy::needless_range_loop)]
-        // We need an index number, to get the triangle's index too
-        for t_index in 0..self.faces.len() {
-            triangles[t_index].v1 = stlv2v4(self.vertices[self.faces[t_index].vertices[0]]);
-            triangles[t_index].v2 = stlv2v4(self.vertices[self.faces[t_index].vertices[1]]);
-            triangles[t_index].v3 = stlv2v4(self.vertices[self.faces[t_index].vertices[2]]);
-            let aabb = triangles[t_index].aabb();
-            bounding_box.min.x = aabb.min.x.min(bounding_box.min.x);
-            bounding_box.min.y = aabb.min.y.min(bounding_box.min.y);
-            bounding_box.min.z = aabb.min.z.min(bounding_box.min.z);
-            bounding_box.max.x = aabb.max.x.max(bounding_box.max.x);
-            bounding_box.max.y = aabb.max.y.max(bounding_box.max.y);
-            bounding_box.max.z = aabb.max.z.max(bounding_box.max.z);
-        }
-        SimpleMesh {
-            triangles,
-            bounding_box,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -199,8 +169,8 @@ mod tests {
         assert_eq!(
             triangle.aabb(),
             AABB::new(
-                Vector4::new(-1.0, -1.0, -1.0, 1.0),
-                Vector4::new(1.0, 1.0, 1.0, 1.0)
+                Vec4::new(-1.0, -1.0, -1.0, 1.0),
+                Vec4::new(1.0, 1.0, 1.0, 1.0)
             )
         );
     }
@@ -212,10 +182,7 @@ mod tests {
         triangle.mul(transform);
         assert_eq!(
             triangle.aabb(),
-            AABB::new(
-                Vector4::new(0.0, 0.0, 0.0, 1.0),
-                Vector4::new(2.0, 2.0, 2.0, 1.0)
-            )
+            AABB::new(Vec4::new(0.0, 0.0, 0.0, 1.0), Vec4::new(2.0, 2.0, 2.0, 1.0))
         );
     }
 
@@ -223,13 +190,13 @@ mod tests {
     fn test_normal() {
         let triangle = Triangle {
             color: (1, 0, 0),
-            v1: Vector4::new(-1.0, 1.0, 0.0, 1.0),
-            v2: Vector4::new(0.0, 1.0, 1.0, 1.0),
-            v3: Vector4::new(1.0, 1.0, 0.0, 1.0),
+            v1: Vec4::new(-1.0, 1.0, 0.0, 1.0),
+            v2: Vec4::new(0.0, 1.0, 1.0, 1.0),
+            v3: Vec4::new(1.0, 1.0, 0.0, 1.0),
         };
         assert_eq!(
             triangle.normal(),
-            Unit::new_normalize(Vector4::new(0.0, 1.0, 0.0, 0.0))
+            Unit::new_normalize(Vec4::new(0.0, 1.0, 0.0, 0.0))
         );
     }
 }

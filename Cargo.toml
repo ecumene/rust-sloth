@@ -5,8 +5,7 @@ authors = ["Mitchell Hynes <mitchell.hynes@ecumene.xyz>"]
 edition = "2021"
 
 [dependencies]
-nalgebra = "0"
-crossterm = "0"
-tobj = "3"
-clap = "2"
-stl_io = "0"
+cli = {path = "crates/cli"}
+rasterizer = {path = "crates/rasterizer"}
+glam = "0.23.0"
+tobj = "3.2.4"
