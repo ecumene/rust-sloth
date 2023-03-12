@@ -11,21 +11,24 @@ pub fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Ve
 }
 
 fn main() {
-    let transform = Mat4::from_translation(Vec3::new(0.0, 0.0, 1.0));
+    let transform = Mat4::IDENTITY;
     let mut context = rasterizer::Context::blank();
-    context.width = 100;
-    context.height = 100;
+    context.width = 40;
+    context.height = 40;
     let pika = load_obj("models/cube.obj", &GPU_LOAD_OPTIONS).expect("oops");
     let meshes = to_meshes(pika.0, pika.1.expect("no mats"));
 
-    context.update((100, 100), &meshes).unwrap();
+    context.update(&meshes).unwrap();
 
-    rasterizer::draw_all(&mut context, transform, meshes, false, false).expect("wow");
+    rasterizer::draw_all(&mut context, transform, meshes).expect("wow");
 
     for x in 0..context.width {
         for y in 0..context.height {
             let index = x + y * context.width;
-            print!("{}", context.frame_buffer[index].0);
+            print!(
+                "{}{}",
+                context.frame_buffer[index].0, context.frame_buffer[index].0
+            );
         }
         println!();
     }

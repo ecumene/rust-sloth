@@ -35,7 +35,7 @@ pub fn default_shader(shade: f32) -> char {
 
 // Used in rasterization
 fn orient(a: &Vec4, b: &Vec4, c: &Vec4) -> f32 {
-    (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+    (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
 }
 
 fn orient_triangle(triangle: &Triangle) -> f32 {
@@ -90,23 +90,18 @@ where
             }
         }
     }
-
-    println!("{:?}", dist_triangle);
 }
 
 pub fn draw_all(
     context: &mut Context,
     transform: Mat4,
     mesh_queue: Vec<SimpleMesh>,
-    color: bool,
-    webify: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let size: (u16, u16) = (100, 100);
-
-    context.update(size, &mesh_queue)?;
+    context.update(&mesh_queue)?;
     context.clear();
 
     for mesh in &mesh_queue {
+        println!("Drawing mesh");
         draw_mesh(context, &mesh, transform, default_shader);
     }
 

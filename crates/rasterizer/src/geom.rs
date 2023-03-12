@@ -63,7 +63,7 @@ impl Triangle {
         let x = (v1[1] * v2[2]) - (v1[2] * v2[1]);
         let y = (v1[2] * v2[0]) - (v1[0] * v2[2]);
         let z = (v1[0] * v2[1]) - (v1[1] * v2[0]);
-        Vec4::new(x, y, z, 0.0)
+        Vec4::new(x, y, z, 0.0).normalize()
     }
 }
 
@@ -161,7 +161,7 @@ impl ToSimpleMesh for Mesh {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nalgebra::Vector3;
+    use glam::{Mat4, Vec3, Vec4};
 
     #[test]
     fn test_aabb() {
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_transform() {
-        let transform = Matrix4::new_translation(&Vector3::new(1.0, 1.0, 1.0));
+        let transform = Mat4::from_translation(Vec3::new(1.0, 1.0, 1.0));
         let mut triangle = Triangle::default();
         triangle.mul(transform);
         assert_eq!(
@@ -194,9 +194,6 @@ mod tests {
             v2: Vec4::new(0.0, 1.0, 1.0, 1.0),
             v3: Vec4::new(1.0, 1.0, 0.0, 1.0),
         };
-        assert_eq!(
-            triangle.normal(),
-            Unit::new_normalize(Vec4::new(0.0, 1.0, 0.0, 0.0))
-        );
+        assert_eq!(triangle.normal(), Vec4::new(0.0, 1.0, 0.0, 0.0));
     }
 }
