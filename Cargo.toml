@@ -4,7 +4,16 @@ version = "0.1.0"
 authors = ["Mitchell Hynes <mitchell.hynes@ecumene.xyz>"]
 edition = "2021"
 
-[dependencies]
+[lib]
+name = "sloth"
+path = "src/lib.rs"
+
+[[bin]]
+name = "sloth"
+path = "src/bin.rs"
+features = ["binary"]
+
+[dependencies.binary]
 cli = {path = "crates/cli"}
 rasterizer = {path = "crates/rasterizer"}
 glam = "0.23.0"

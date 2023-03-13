@@ -43,7 +43,7 @@ pub fn default_shader(shade: f32) -> char {
     }
 }
 
-pub struct Context {
+pub struct Rasterizer {
     pub utransform: Mat4,
     pub width: usize,
     pub height: usize,
@@ -51,12 +51,12 @@ pub struct Context {
     pub z_buffer: Vec<f32>,
 }
 
-impl Context {
-    pub fn blank() -> Context {
-        Context {
+impl Rasterizer {
+    pub fn new(width: usize, height: usize) -> Rasterizer {
+        Rasterizer {
             utransform: Mat4::IDENTITY,
-            width: 0,
-            height: 0,
+            width,
+            height,
             frame_buffer: vec![],
             z_buffer: vec![],
         }
@@ -88,7 +88,7 @@ impl Context {
         }
     }
 
-    pub fn draw_triangle<F>(self: &mut Context, triangle: &Triangle, transform: Mat4, shader: F)
+    pub fn draw_triangle<F>(self: &mut Rasterizer, triangle: &Triangle, transform: Mat4, shader: F)
     where
         F: Fn(f32) -> char,
     {
@@ -128,7 +128,7 @@ impl Context {
         }
     }
 
-    pub fn draw_mesh<F>(self: &mut Context, mesh: &SimpleMesh, transform: Mat4, shader: F)
+    pub fn draw_mesh<F>(self: &mut Rasterizer, mesh: &SimpleMesh, transform: Mat4, shader: F)
     where
         F: Fn(f32) -> char,
     {
@@ -138,7 +138,7 @@ impl Context {
     }
 
     pub fn draw_all(
-        self: &mut Context,
+        self: &mut Rasterizer,
         transform: Mat4,
         mesh_queue: Vec<SimpleMesh>,
     ) -> Result<(), Box<dyn Error>> {
@@ -165,6 +165,7 @@ impl Context {
         scale = f32::from(height).min(f32::from(width) / 2.0) / scale / 2.0;
 
         self.utransform = Mat4::from_translation(Vec3::new(width / 4.0, height / 2.0, 0.0))
+            * Mat4::from_rotation_y(std::f32::consts::PI / 6.0)
             * Mat4::from_scale(Vec3::new(scale, -scale * 2.0, scale));
 
         Ok(())
