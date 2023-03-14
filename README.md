@@ -1,4 +1,4 @@
-# sloth - A one-of-a-kind Rust 3D Renderer for the CLI
+# rendersloth - A one-of-a-kind Rust 3D Renderer for the CLI
 ![pikachu](models/demo/pikachu.gif)
   
 A one-of-a-kind command line 3D software rasterizer made with termion, tobj, and nalgebra. Currently it 

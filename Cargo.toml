@@ -1,5 +1,5 @@
 [package]
-name = "sloth"
+name = "rendersloth"
 version = "0.2.0"
 license = "MIT"
 description = "A 3D Renderer for the CLI"
@@ -12,10 +12,10 @@ exclude = ["/models", "preview.gif"]
 build-cli = ["clap"]
 
 [lib]
-name = "sloth"
+name = "rendersloth"
 
 [[bin]]
-name = "sloth"
+name = "rendersloth"
 required-features = ["build-cli"]
 
 [dependencies]
