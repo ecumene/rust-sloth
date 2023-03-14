@@ -50,6 +50,7 @@ fn main() -> Result<(), Box<dyn Error>>  {
         Err(format!("filename: [{}] couldn't load, {}. {}", args.file_name.display(), s, e).into())
     };
 
+
     let meshes = match args.file_name.extension() {
         None => error("couldn't determine filename extension", ""),
         Some(ext) => match ext.to_str() {

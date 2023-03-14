@@ -1,32 +1,49 @@
 # rendersloth - A one-of-a-kind Rust 3D Renderer for the CLI
 ![pikachu](models/demo/pikachu.gif)
   
-A one-of-a-kind command line 3D software rasterizer made with termion, tobj, and nalgebra. Currently it 
-supports OBJ file formats without textures. It also supports OBJ file formats with vertex colors.
+Render 3D models in your terminal or app. Sloth is a software rasterizer that
+turns triangles into charxels (a character + a colour). It does this via a
+simple triangle-grid intersection method to determine if a triangle is in a
+character. It then uses a really simple shading scale to determine which
+character to use based on brightness. Colour is determined by the Vertex color
+for OBJ and the model color for STL.
 
-[Javascript Export Demonstration](http://ecumene.xyz/sloth-demo)
-
-## Getting Started / Uses
+## Getting Started 
 ---
-Here's a few really simple commands for you to get started.
 
-You can replace `sloth <args>` with `cargo run --release -- <args>` anywhere
+### As a library
+
+```rust
+let mut context = Rasterizer::new(40, 40);
+
+// Convert your OBJ to a simpler format for rendering
+let mut meshes: Vec<SimpleMesh> = vec![];
+let obj_model = tobj::load_obj("file.obj", &tobj::GPU_LOAD_OPTIONS);
+let obj_mesh = obj_model.0;
+let obj_materials = obj_model.1.expect("Expected to have materials.");
+for model in {
+    meshes.push(model.mesh.to_simple_mesh_with_materials(&materials));
+}
+
+// Scale the camera to the model
+context.update(&meshes)?;
+let transform = Mat4::IDENTITY;
+// Draw the meshes to the context's built-in framebuffer
+context.draw_all(transform, meshes)?;
+
+// Print the screen's contents
+context.flush()?;
+```
+
+### Using as a CLI App
+
+```sh
+cargo install rendersloth --features build-cli
+```
 
 #### Render pikachu
-```
-sloth models/Pikachu.obj
-```
-#### For multiple models:   
-```
-sloth "models/suzy.obj models/suzy.obj"
-```
-#### You can also generate a static image:
-```
-sloth models/Pikachu.obj image -w <width_in_pixels> -h <height_in_pixels>
-```
-#### You can also generate a portable Javascript render like this:
-```
-sloth models/Pikachu.obj image -j <number_of_frames> -w <width_in_pixels> -h <height_in_pixels> > src-webify/data.js
+```sh
+rendersloth --file-name models/Pikachu.obj
 ```
 
 Thank you, contributors!
