@@ -6,6 +6,7 @@ description = "A 3D Renderer for the CLI"
 repository = "github.com/ecumene/rust-sloth"
 authors = ["Mitchell Hynes <mitchell.hynes@ecumene.xyz>"]
 edition = "2021"
+exclude = ["/models", "preview.gif"]
 
 [features]
 build-cli = ["clap"]
