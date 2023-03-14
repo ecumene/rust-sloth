@@ -13,7 +13,13 @@ for OBJ and the model color for STL.
 
 ### As a library
 
+```
+cargo add rendersloth
+```
+
 ```rust
+use rendersloth::*;
+
 let mut context = Rasterizer::new(40, 40);
 
 // Convert your OBJ to a simpler format for rendering

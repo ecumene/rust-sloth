@@ -1,6 +1,6 @@
 [package]
 name = "rendersloth"
-version = "0.2.0"
+version = "0.2.1"
 license = "MIT"
 description = "A 3D Renderer for the CLI"
 repository = "https://github.com/ecumene/rust-sloth"
