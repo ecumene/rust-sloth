@@ -1,3 +1,4 @@
+use tobj;
 use clap::{Parser, Subcommand};
 use rasterizer::*;
 
@@ -36,7 +37,7 @@ fn run() {
 
     let mut context = Rasterizer::new(40, 40);
 
-    let pika = load_obj("models/ferris.obj", &GPU_LOAD_OPTIONS).expect("oops");
+    let pika = tobj::load_obj("models/ferris.obj", &tobj::GPU_LOAD_OPTIONS).expect("oops");
     let meshes = to_meshes(pika.0, pika.1.expect("no mats"));
 
     context.update(&meshes).unwrap();

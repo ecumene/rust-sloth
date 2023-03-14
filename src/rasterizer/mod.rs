@@ -1,5 +1,8 @@
 mod geom;
 
+use crossterm::style::PrintStyledContent;
+use crossterm::style::Stylize;
+use crossterm::QueueableCommand;
 pub use geom::{SimpleMesh, Triangle};
 pub use glam::{Mat4, Vec4};
 use std::error::Error;
@@ -8,6 +11,9 @@ pub use geom::*;
 
 use glam::Vec3;
 use std::f32;
+
+use std::io::stdout;
+use std::io::Write;
 
 pub type Framebuffer = Vec<(char, (u8, u8, u8))>;
 
@@ -49,6 +55,18 @@ pub struct Rasterizer {
     pub height: usize,
     pub frame_buffer: Framebuffer,
     pub z_buffer: Vec<f32>,
+    pub pixel_width: usize,
+}
+
+fn flush_charxel(charxel: (char, (u8, u8, u8)), stdout: &mut std::io::Stdout) {
+    let styled = crossterm::style::style(charxel.0)
+        .with(crossterm::style::Color::Rgb {
+            r: charxel.1 .0,
+            g: charxel.1 .1,
+            b: charxel.1 .2,
+        })
+        .on(crossterm::style::Color::Black);
+    stdout.queue(PrintStyledContent(styled)).unwrap();
 }
 
 impl Rasterizer {
@@ -59,6 +77,7 @@ impl Rasterizer {
             height,
             frame_buffer: vec![],
             z_buffer: vec![],
+            pixel_width: 2,
         }
     }
 
@@ -68,16 +87,20 @@ impl Rasterizer {
     }
 
     pub fn flush(&self) -> Result<(), Box<dyn Error>> {
+        let mut stdout = stdout();
+        let pixel_width = 2;
+
         for y in 0..self.height {
             for x in 0..self.width {
                 let index = x + y * self.width;
-                print!(
-                    "{}{}",
-                    self.frame_buffer[index].0, self.frame_buffer[index].0
-                );
+                for _ in 0..pixel_width {
+                    flush_charxel(self.frame_buffer[index], &mut stdout)
+                }
             }
             println!();
         }
+
+        stdout.flush()?;
 
         Ok(())
     }
@@ -165,7 +188,7 @@ impl Rasterizer {
         scale = f32::from(height).min(f32::from(width) / 2.0) / scale / 2.0;
 
         self.utransform = Mat4::from_translation(Vec3::new(width / 4.0, height / 2.0, 0.0))
-            * Mat4::from_rotation_y(std::f32::consts::PI / 6.0)
+            * Mat4::from_rotation_y(std::f32::consts::PI)
             * Mat4::from_scale(Vec3::new(scale, -scale * 2.0, scale));
 
         Ok(())

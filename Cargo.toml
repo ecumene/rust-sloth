@@ -1,20 +1,25 @@
 [package]
 name = "sloth"
-version = "0.1.0"
+version = "0.2.0"
+license = "MIT"
+description = "A 3D Renderer for the CLI"
+repository = "github.com/ecumene/rust-sloth"
 authors = ["Mitchell Hynes <mitchell.hynes@ecumene.xyz>"]
 edition = "2021"
 
+[features]
+build-cli = ["clap"]
+
 [lib]
 name = "sloth"
-path = "src/lib.rs"
 
 [[bin]]
 name = "sloth"
-path = "src/bin.rs"
-features = ["binary"]
+required-features = ["build-cli"]
 
-[dependencies.binary]
-cli = {path = "crates/cli"}
-rasterizer = {path = "crates/rasterizer"}
+[dependencies]
+clap = { version = "4.1.8", features = ["derive"], optional = true }
+stl_io = "0.7.0"
+crossterm = "0.26.1"
 glam = "0.23.0"
 tobj = "3.2.4"
