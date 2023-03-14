@@ -24,6 +24,9 @@ enum Mode {
 
         #[arg(short, long, required = false)]
         height: usize,
+    },
+    Turntable {
+        speed: f32,
     }
 }
 
@@ -40,6 +43,7 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>>  {
     let args = Args::parse();
 
+    // TODO: Image + Turntable
     let mut context = Rasterizer::new(40, 40);
 
     let error = |s: &str, e: &str| -> Result<Vec<SimpleMesh>, Box<dyn Error>> {
