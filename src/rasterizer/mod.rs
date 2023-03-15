@@ -200,21 +200,29 @@ impl Rasterizer {
 
 #[cfg(feature = "tui-widget")]
 impl Widget for Rasterizer {
-    fn draw(&mut self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        self.width = area.width as usize;
+        self.height = area.height as usize;
+        self.frame_buffer = vec![(' ', (0, 0, 0)); self.width * self.height];
+        self.z_buffer = vec![std::f32::MAX; self.width * self.height * 2];
+
         for y in 0..self.height {
             for x in 0..self.width {
-                let index = x + y * self.width;
-                let charxel = self.frame_buffer[index];
-                let style = Style::default()
-                    .fg(Color::Rgb {
-                        r: charxel.1 .0,
-                        g: charxel.1 .1,
-                        b: charxel.1 .2,
-                    })
-                    .bg(Color::Black);
-                buf.get_mut(area.left() + x as u16, area.top() + y as u16)
-                    .set_symbol(charxel.0)
-                    .set_style(style);
+                let pixel_width = 2;
+                for o in 0..pixel_width {
+                    let index = x + y * self.width;
+                    let charxel = self.frame_buffer[index];
+                    let style = Style::default()
+                        .fg(Color::Rgb(
+                            charxel.1 .0,
+                            charxel.1 .1,
+                            charxel.1 .2,
+                        ))
+                        .bg(Color::Black);
+                    buf.get_mut(area.left() + x + o as u16, area.top() + y as u16)
+                        .set_symbol(&charxel.0.to_string())
+                        .set_style(style);
+                }
             }
         }
     }
