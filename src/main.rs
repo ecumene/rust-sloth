@@ -8,7 +8,9 @@ use std::fs::OpenOptions;
 use clap::{Parser, Subcommand};
 use rasterizer::*;
 
-pub fn to_meshes(models: Vec<tobj::Model>, materials: Vec<tobj::Material>) -> Vec<SimpleMesh> {
+pub fn to_meshes(present: (Vec<tobj::Model>, Result<Vec<tobj::Material>, tobj::LoadError>)) -> Vec<SimpleMesh> {
+    let models = present.0;
+    let materials = present.1.expect("couldn't load materials");
     let mut meshes: Vec<SimpleMesh> = vec![];
     for model in models {
         meshes.push(model.mesh.to_simple_mesh_with_materials(&materials));
@@ -26,6 +28,7 @@ enum Mode {
         height: usize,
     },
     Turntable {
+        #[arg(short, long, required = false)]
         speed: f32,
     }
 }
@@ -58,10 +61,7 @@ fn main() -> Result<(), Box<dyn Error>>  {
             Some(extstr) => match &*extstr.to_lowercase() {
                 "obj" => match tobj::load_obj(&args.file_name, &tobj::GPU_LOAD_OPTIONS) {
                     Err(e) => error("tobj couldnt load/parse OBJ", &e.to_string()),
-                    Ok(present) => Ok(to_meshes(
-                        present.0,
-                        present.1.expect("Expected to have materials."),
-                    )),
+                    Ok(present) => Ok(to_meshes(present)),
                 },
                 "stl" => match OpenOptions::new().read(true).open(&args.file_name) {
                     Err(e) => error("STL load failed", &e.to_string()),
