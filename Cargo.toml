@@ -10,6 +10,7 @@ exclude = ["/models", "preview.gif"]
 
 [features]
 build-cli = ["clap"]
+tui-widget = ["tui"]
 
 [lib]
 name = "rendersloth"
@@ -20,7 +21,8 @@ required-features = ["build-cli"]
 
 [dependencies]
 clap = { version = "4.1.8", features = ["derive"], optional = true }
-stl_io = "0.7.0"
+tui = { version = "0.19", optional = true }
+stl_io = "0.7"
 crossterm = "0.26.1"
-glam = "0.23.0"
+glam = "0.23"
 tobj = "3.2.4"

@@ -3,17 +3,20 @@ mod geom;
 use crossterm::style::PrintStyledContent;
 use crossterm::style::Stylize;
 use crossterm::QueueableCommand;
-pub use geom::{SimpleMesh, Triangle};
-pub use glam::{Mat4, Vec4};
 use std::error::Error;
 
 pub use geom::*;
+pub use geom::{SimpleMesh, Triangle};
+pub use glam::{Mat4, Vec4};
 
 use glam::Vec3;
 use std::f32;
 
 use std::io::stdout;
 use std::io::Write;
+
+#[cfg(feature = "tui-widget")]
+use tui::{ widgets::Widget, style::{ Style, Color }, layout::Rect, buffer::Buffer };
 
 pub type Framebuffer = Vec<(char, (u8, u8, u8))>;
 
@@ -192,5 +195,27 @@ impl Rasterizer {
             * Mat4::from_scale(Vec3::new(scale, -scale * 2.0, scale));
 
         Ok(())
+    }
+}
+
+#[cfg(feature = "tui-widget")]
+impl Widget for Rasterizer {
+    fn draw(&mut self, area: Rect, buf: &mut Buffer) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let index = x + y * self.width;
+                let charxel = self.frame_buffer[index];
+                let style = Style::default()
+                    .fg(Color::Rgb {
+                        r: charxel.1 .0,
+                        g: charxel.1 .1,
+                        b: charxel.1 .2,
+                    })
+                    .bg(Color::Black);
+                buf.get_mut(area.left() + x as u16, area.top() + y as u16)
+                    .set_symbol(charxel.0)
+                    .set_style(style);
+            }
+        }
     }
 }
