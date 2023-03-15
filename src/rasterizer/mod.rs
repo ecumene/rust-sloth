@@ -200,7 +200,7 @@ impl Rasterizer {
 
 #[cfg(feature = "tui-widget")]
 impl Widget for Rasterizer {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
         self.width = area.width as usize;
         self.height = area.height as usize;
         self.frame_buffer = vec![(' ', (0, 0, 0)); self.width * self.height];
@@ -219,9 +219,11 @@ impl Widget for Rasterizer {
                             charxel.1 .2,
                         ))
                         .bg(Color::Black);
-                    buf.get_mut(area.left() + x + o as u16, area.top() + y as u16)
-                        .set_symbol(&charxel.0.to_string())
-                        .set_style(style);
+                    if x + o < self.width {
+                        buf.get_mut(area.left() + x as u16 + o as u16, area.top() + y as u16)
+                            .set_symbol(&charxel.0.to_string())
+                            .set_style(style);
+                    }
                 }
             }
         }
