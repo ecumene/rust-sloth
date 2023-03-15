@@ -349,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "rendersloth"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "clap",
  "crossterm 0.26.1",
