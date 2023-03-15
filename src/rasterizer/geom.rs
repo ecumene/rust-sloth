@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 use glam::{Mat4, Vec4};
 use std::clone::Clone;
-use tobj::{Material, Mesh};
 use stl_io::IndexedMesh;
+use tobj::{Material, Mesh};
 
 #[derive(PartialEq, Debug)]
 pub struct AABB {

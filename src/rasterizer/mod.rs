@@ -15,9 +15,6 @@ use std::f32;
 use std::io::stdout;
 use std::io::Write;
 
-#[cfg(feature = "tui-widget")]
-use tui::{ widgets::Widget, style::{ Style, Color }, layout::Rect, buffer::Buffer };
-
 pub type Framebuffer = Vec<(char, (u8, u8, u8))>;
 
 fn orient(a: &Vec4, b: &Vec4, c: &Vec4) -> f32 {
@@ -192,34 +189,65 @@ impl Rasterizer {
 
         self.utransform = Mat4::from_translation(Vec3::new(width / 4.0, height / 2.0, 0.0))
             * Mat4::from_rotation_y(std::f32::consts::PI)
-            * Mat4::from_scale(Vec3::new(scale, -scale * 2.0, scale));
+            * Mat4::from_scale(Vec3::new(scale, -scale, scale));
 
         Ok(())
     }
 }
 
 #[cfg(feature = "tui-widget")]
-impl Widget for Rasterizer {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
-        self.width = area.width as usize;
-        self.height = area.height as usize;
-        self.frame_buffer = vec![(' ', (0, 0, 0)); self.width * self.height];
-        self.z_buffer = vec![std::f32::MAX; self.width * self.height * 2];
+use tui::{
+    buffer::Buffer,
+    layout::Rect,
+    style::{Color, Style},
+    widgets::Widget,
+};
 
-        for y in 0..self.height {
-            for x in 0..self.width {
+#[cfg(feature = "tui-widget")]
+pub struct RasterizerWidget {
+    rasterizer: Rasterizer,
+    meshes: Vec<SimpleMesh>,
+    transform: Mat4,
+}
+
+#[cfg(feature = "tui-widget")]
+impl RasterizerWidget {
+    pub fn new(rasterizer: Rasterizer, meshes: Vec<SimpleMesh>) -> Self {
+        Self {
+            rasterizer,
+            meshes,
+            transform: Mat4::IDENTITY,
+        }
+    }
+}
+
+#[cfg(feature = "tui-widget")]
+impl Widget for RasterizerWidget {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
+        self.rasterizer.width = area.width as usize;
+        self.rasterizer.height = area.height as usize;
+        self.rasterizer.frame_buffer =
+            vec![(' ', (0, 0, 0)); self.rasterizer.width * self.rasterizer.height];
+        self.rasterizer.z_buffer =
+            vec![std::f32::MAX; self.rasterizer.width * self.rasterizer.height * 2];
+
+        self.rasterizer
+            .update(&self.meshes)
+            .expect("Failed to update rasterizer");
+
+        self.rasterizer
+            .draw_all(self.transform, self.meshes)
+            .unwrap();
+
+        for y in 0..self.rasterizer.height {
+            for x in 0..self.rasterizer.width {
                 let pixel_width = 2;
                 for o in 0..pixel_width {
-                    let index = x + y * self.width;
-                    let charxel = self.frame_buffer[index];
-                    let style = Style::default()
-                        .fg(Color::Rgb(
-                            charxel.1 .0,
-                            charxel.1 .1,
-                            charxel.1 .2,
-                        ))
-                        .bg(Color::Black);
-                    if x + o < self.width {
+                    let index = x + y * self.rasterizer.width;
+                    let charxel = self.rasterizer.frame_buffer[index];
+                    let style =
+                        Style::default().fg(Color::Rgb(charxel.1 .0, charxel.1 .1, charxel.1 .2));
+                    if x + o < self.rasterizer.width {
                         buf.get_mut(area.left() + x as u16 + o as u16, area.top() + y as u16)
                             .set_symbol(&charxel.0.to_string())
                             .set_style(style);
