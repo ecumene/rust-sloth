@@ -49,13 +49,17 @@ pub fn default_shader(shade: f32) -> char {
     }
 }
 
-pub struct Rasterizer {
+pub struct Rasterizer<'a> {
     pub utransform: Mat4,
+    pub meshes: &'a Vec<SimpleMesh>,
+    pub pixel_width: usize,
+}
+
+pub struct Frame {
     pub width: usize,
     pub height: usize,
     pub frame_buffer: Framebuffer,
     pub z_buffer: Vec<f32>,
-    pub pixel_width: usize,
 }
 
 fn flush_charxel(charxel: (char, (u8, u8, u8)), stdout: &mut std::io::Stdout) {
@@ -69,18 +73,7 @@ fn flush_charxel(charxel: (char, (u8, u8, u8)), stdout: &mut std::io::Stdout) {
     stdout.queue(PrintStyledContent(styled)).unwrap();
 }
 
-impl Rasterizer {
-    pub fn new(width: usize, height: usize) -> Rasterizer {
-        Rasterizer {
-            utransform: Mat4::IDENTITY,
-            width,
-            height,
-            frame_buffer: vec![],
-            z_buffer: vec![],
-            pixel_width: 2,
-        }
-    }
-
+impl Frame {
     pub fn clear(&mut self) {
         self.frame_buffer = vec![(' ', (0, 0, 0)); self.width * self.height];
         self.z_buffer = vec![f32::MAX; self.width * self.height as usize]; //f32::MAX is written to the z-buffer as an infinite back-wall to render with
@@ -111,12 +104,12 @@ impl Rasterizer {
         }
     }
 
-    pub fn draw_triangle<F>(self: &mut Rasterizer, triangle: &Triangle, transform: Mat4, shader: F)
+    pub fn draw_triangle<F>(self: &mut Frame, triangle: &Triangle, transform: Mat4, shader: F)
     where
         F: Fn(f32) -> char,
     {
         let mut dist_triangle = triangle.clone();
-        dist_triangle.mul(self.utransform * transform);
+        dist_triangle.mul(transform);
         let aabb = dist_triangle.aabb(); // Calculate triangle bounds
         let mins: (usize, usize) = (
             aabb.min[0].max(1.0).ceil() as usize,
@@ -151,7 +144,7 @@ impl Rasterizer {
         }
     }
 
-    pub fn draw_mesh<F>(self: &mut Rasterizer, mesh: &SimpleMesh, transform: Mat4, shader: F)
+    pub fn draw_mesh<F>(self: &mut Frame, mesh: &SimpleMesh, transform: Mat4, shader: F)
     where
         F: Fn(f32) -> char,
     {
@@ -159,37 +152,45 @@ impl Rasterizer {
             self.draw_triangle(&triangle, transform, &shader);
         }
     }
+}
 
-    pub fn draw_all(
-        self: &mut Rasterizer,
-        transform: Mat4,
-        mesh_queue: Vec<SimpleMesh>,
-    ) -> Result<(), Box<dyn Error>> {
-        self.update(&mesh_queue)?;
-        self.clear();
-
-        for mesh in &mesh_queue {
-            self.draw_mesh(&mesh, transform, default_shader);
+impl<'a> Rasterizer<'a> {
+    pub fn new(width: usize, height: usize, meshes: &'a Vec<SimpleMesh>) -> Rasterizer<'a> {
+        Rasterizer {
+            utransform: Mat4::IDENTITY,
+            meshes,
+            pixel_width: 2,
         }
-
-        Ok(())
     }
 
-    pub fn update(&mut self, meshes: &[SimpleMesh]) -> Result<(), Box<dyn Error>> {
+    pub fn scale_to_fit(&mut self, width: f32, height: f32) -> Result<(), Box<dyn Error>> {
         let mut scale: f32 = 0.0;
-        for mesh in meshes {
+        for mesh in self.meshes {
             scale = scale
                 .max(mesh.bounding_box.max.x)
                 .max(mesh.bounding_box.max.y)
                 .max(mesh.bounding_box.max.z);
         }
 
-        let (width, height) = (self.width as f32, self.height as f32);
         scale = f32::from(height).min(f32::from(width) / 2.0) / scale / 2.0;
 
         self.utransform = Mat4::from_translation(Vec3::new(width / 4.0, height / 2.0, 0.0))
             * Mat4::from_rotation_y(std::f32::consts::PI)
             * Mat4::from_scale(Vec3::new(scale, -scale, scale));
+
+        Ok(())
+    }
+
+    pub fn draw_all(
+        self: &Rasterizer<'a>,
+        frame: &mut Frame,
+        transform: Mat4,
+    ) -> Result<(), Box<dyn Error>> {
+        frame.clear();
+
+        for mesh in self.meshes {
+            frame.draw_mesh(&mesh, self.utransform * transform, default_shader);
+        }
 
         Ok(())
     }
@@ -204,50 +205,17 @@ use tui::{
 };
 
 #[cfg(feature = "tui-widget")]
-pub struct RasterizerWidget {
-    rasterizer: Rasterizer,
-    meshes: Vec<SimpleMesh>,
-    transform: Mat4,
-}
-
-#[cfg(feature = "tui-widget")]
-impl RasterizerWidget {
-    pub fn new(rasterizer: Rasterizer, meshes: Vec<SimpleMesh>) -> Self {
-        Self {
-            rasterizer,
-            meshes,
-            transform: Mat4::IDENTITY,
-        }
-    }
-}
-
-#[cfg(feature = "tui-widget")]
-impl Widget for RasterizerWidget {
-    fn render(mut self, area: Rect, buf: &mut Buffer) {
-        self.rasterizer.width = area.width as usize;
-        self.rasterizer.height = area.height as usize;
-        self.rasterizer.frame_buffer =
-            vec![(' ', (0, 0, 0)); self.rasterizer.width * self.rasterizer.height];
-        self.rasterizer.z_buffer =
-            vec![std::f32::MAX; self.rasterizer.width * self.rasterizer.height * 2];
-
-        self.rasterizer
-            .update(&self.meshes)
-            .expect("Failed to update rasterizer");
-
-        self.rasterizer
-            .draw_all(self.transform, self.meshes)
-            .unwrap();
-
-        for y in 0..self.rasterizer.height {
-            for x in 0..self.rasterizer.width {
+impl<'a> Widget for Frame {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        for y in 0..self.height {
+            for x in 0..self.width {
                 let pixel_width = 2;
                 for o in 0..pixel_width {
-                    let index = x + y * self.rasterizer.width;
-                    let charxel = self.rasterizer.frame_buffer[index];
+                    let index = x + y * self.width;
+                    let charxel = self.frame_buffer[index];
                     let style =
                         Style::default().fg(Color::Rgb(charxel.1 .0, charxel.1 .1, charxel.1 .2));
-                    if x + o < self.rasterizer.width {
+                    if x + o < self.width {
                         buf.get_mut(area.left() + x as u16 + o as u16, area.top() + y as u16)
                             .set_symbol(&charxel.0.to_string())
                             .set_style(style);
