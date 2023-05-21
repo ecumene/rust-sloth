@@ -72,7 +72,6 @@ pub fn draw_triangle(
         for x in mins.0..maxs.0 {
             for segment in 0..2 {
                 let shp = shader.precision();
-                let mut points = vec![vec![0.0; shp]; shp];
                 let spacing: f32 = 0.5 / (shp as f32 + 1.0);
                 let id = y * context.width + x * 2;
                 let offset = match segment {
@@ -81,9 +80,9 @@ pub fn draw_triangle(
                 };
                 let mut y_spacing = -0.5 + spacing * 2.0;
                 let mut index = 0;
-                for point_y in points.iter_mut() {
+                for _ in 0..shp {
                     let mut x_spacing = offset + spacing;
-                    for point_x in point_y.iter_mut() {
+                    for _ in 0..shp {
                         let p = Vector4::new(x as f32 + x_spacing, y as f32 + y_spacing, 0.0, 0.0);
                         let w0 = orient(&dist_triangle.v2, &dist_triangle.v3, &p);
                         let w1 = orient(&dist_triangle.v3, &dist_triangle.v1, &p);
