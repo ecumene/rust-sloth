@@ -1,10 +1,10 @@
 use crate::context::Context;
 use crate::geometry::{SimpleMesh, ToSimpleMesh, ToSimpleMeshWithMaterial};
+use crate::Shader;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::Path;
-use tobj::LoadOptions;
 
 pub fn cli_matches<'a>() -> ArgMatches<'a> {
     commands_for_subcommands(
@@ -43,6 +43,14 @@ pub fn cli_matches<'a>() -> ArgMatches<'a> {
                     .required(true)
                     .multiple(true)
                     .index(1),
+            )
+            .arg(
+                Arg::with_name("shader")
+                    .long("shader")
+                    .short("s")
+                    .possible_values(&["unicode"])
+                    .required(false)
+                    .takes_value(true),
             ),
     )
     .get_matches()
@@ -154,6 +162,14 @@ pub fn match_image_mode(matches: &ArgMatches) -> bool {
 
 pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
     matches.is_present("no color")
+}
+
+pub fn match_shader(matches: &ArgMatches) -> Shader {
+    match matches.value_of("shader") {
+        Some("unicode") => Shader::new_unicode(),
+        Some(_) => Shader::Simple,
+        None => Shader::Simple,
+    }
 }
 
 pub fn match_dimensions(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<dyn Error>> {

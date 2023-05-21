@@ -1,30 +1,7 @@
 use crate::context::Context;
 use crate::geometry::{SimpleMesh, Triangle};
+use crate::{Pixel, Shader};
 use nalgebra::{Matrix4, Vector4};
-
-pub fn default_shader(shade: f32) -> char {
-    if shade <= 0.20 {
-        '.'
-    } else if shade <= 0.30 {
-        ':'
-    } else if shade <= 0.40 {
-        '-'
-    } else if shade <= 0.50 {
-        '='
-    } else if shade <= 0.60 {
-        '+'
-    } else if shade <= 0.70 {
-        '*'
-    } else if shade <= 0.80 {
-        '#'
-    } else if shade <= 0.90 {
-        '%'
-    } else if shade <= 1.0 {
-        '@'
-    } else {
-        ' '
-    }
-}
 
 // Used in rasterization
 fn orient(a: &Vector4<f32>, b: &Vector4<f32>, c: &Vector4<f32>) -> f32 {
@@ -36,23 +13,48 @@ fn orient_triangle(triangle: &Triangle) -> f32 {
 }
 
 // Writes multiple meshes to context
-pub fn draw_mesh<F>(context: &mut Context, mesh: &SimpleMesh, transform: Matrix4<f32>, shader: F)
-where
-    F: Fn(f32) -> char,
-{
+pub fn draw_mesh(
+    context: &mut Context,
+    mesh: &SimpleMesh,
+    transform: Matrix4<f32>,
+    shader: &Shader,
+) {
     for triangle in &mesh.triangles {
         draw_triangle(context, &triangle, transform, &shader);
     }
 }
 
-pub fn draw_triangle<F>(
+pub fn render(context: &mut Context, shader: &Shader) {
+    for (i, point) in context.shader_buffer.iter().enumerate() {
+        if point.len() == 0 {
+            continue;
+        }
+        let character =
+            shader.shader_to_char(&point.iter().map(|x| x.shade).collect::<Vec<f32>>()[..]);
+        let shp = shader.precision();
+        let dominant_color = match point[shp / 2].color {
+            Some(c) => c,
+            None => point
+                .iter()
+                .max_by(|a, b| {
+                    a.shade
+                        .partial_cmp(&b.shade)
+                        .unwrap_or(std::cmp::Ordering::Less)
+                })
+                .unwrap()
+                .color
+                .unwrap(),
+        };
+        context.frame_buffer[i] = (character, dominant_color);
+    }
+}
+
+pub fn draw_triangle(
     context: &mut Context,
     triangle: &Triangle,
     transform: Matrix4<f32>,
-    shader: F,
-) where
-    F: Fn(f32) -> char,
-{
+    shader: &Shader,
+) {
     let mut dist_triangle = triangle.clone();
     dist_triangle.mul(context.utransform * transform);
     let aabb = dist_triangle.aabb(); // Calculate triangle bounds
@@ -68,21 +70,51 @@ pub fn draw_triangle<F>(
 
     for y in mins.1..maxs.1 {
         for x in mins.0..maxs.0 {
-            let p = Vector4::new(x as f32, y as f32, 0.0, 0.0);
-            let w0 = orient(&dist_triangle.v2, &dist_triangle.v3, &p);
-            let w1 = orient(&dist_triangle.v3, &dist_triangle.v1, &p);
-            let w2 = orient(&dist_triangle.v1, &dist_triangle.v2, &p);
-            if w0 >= 0.0 && w1 >= 0.0 && w2 >= 0.0 {
-                let pixel_shade = dist_triangle.normal().z * a * (w0 + w1 + w2);
-                let z = dist_triangle.v1[2]
-                    + a * (w1 * (dist_triangle.v2[2] - dist_triangle.v1[2])
-                        + w2 * (dist_triangle.v3[2] - dist_triangle.v1[2]));
+            for segment in 0..2 {
+                let shp = shader.precision();
+                let mut points = vec![vec![0.0; shp]; shp];
+                let spacing: f32 = 0.5 / (shp as f32 + 1.0);
                 let id = y * context.width + x * 2;
-                if z < context.z_buffer[id] {
-                    context.z_buffer[id] = z;
-                    let pixel = (shader(pixel_shade), dist_triangle.color);
-                    context.frame_buffer[id] = pixel;
-                    context.frame_buffer[id + 1] = pixel;
+                let offset = match segment {
+                    0 => -0.5,
+                    _ => 0.0,
+                };
+                let mut y_spacing = -0.5 + spacing * 2.0;
+                let mut index = 0;
+                for point_y in points.iter_mut() {
+                    let mut x_spacing = offset + spacing;
+                    for point_x in point_y.iter_mut() {
+                        let p = Vector4::new(x as f32 + x_spacing, y as f32 + y_spacing, 0.0, 0.0);
+                        let w0 = orient(&dist_triangle.v2, &dist_triangle.v3, &p);
+                        let w1 = orient(&dist_triangle.v3, &dist_triangle.v1, &p);
+                        let w2 = orient(&dist_triangle.v1, &dist_triangle.v2, &p);
+                        if w0 >= 0.0 && w1 >= 0.0 && w2 >= 0.0 {
+                            let psh = dist_triangle.normal().z * a * (w0 + w1 + w2);
+                            let z = dist_triangle.v1[2]
+                                + a * (w1 * (dist_triangle.v2[2] - dist_triangle.v1[2])
+                                    + w2 * (dist_triangle.v3[2] - dist_triangle.v1[2]));
+                            if context.shader_buffer[id + segment].len() == 0 {
+                                context.shader_buffer[id + segment] = vec![
+                                    Pixel {
+                                        shade: 0.0,
+                                        z: f32::MAX,
+                                        color: None
+                                    };
+                                    shp * shp
+                                ]
+                            }
+                            if z < context.shader_buffer[id + segment][index].z {
+                                context.shader_buffer[id + segment][index] = Pixel {
+                                    shade: psh,
+                                    z,
+                                    color: Some(dist_triangle.color),
+                                };
+                            }
+                        }
+                        x_spacing += spacing;
+                        index += 1;
+                    }
+                    y_spacing += spacing * 2.0;
                 }
             }
         }

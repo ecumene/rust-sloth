@@ -22,6 +22,9 @@ pub use rasterizer::*;
 pub mod inputs;
 pub use inputs::*;
 
+pub mod shaders;
+pub use shaders::*;
+
 fn main() -> Result<(), Box<dyn Error>> {
     let matches = cli_matches(); // Read command line arguments
 
@@ -35,6 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut webify = false;
     let mut webify_frame_count = 0;
     let mut webify_todo_frames = 0;
+    let shader = match_shader(&matches);
 
     let mut context: Context = Context::blank(match_image_mode(&matches)); // The context holds the frame+z buffer, and the width and height
     if context.image {
@@ -79,8 +83,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         context.clear(); // This clears the z and frame buffer
         for mesh in &mesh_queue {
             // Render all in mesh queue
-            draw_mesh(&mut context, &mesh, rot, default_shader); // Draw all meshes
+            draw_mesh(&mut context, &mesh, rot, &shader); // Draw all meshes
         }
+        render(&mut context, &shader);
 
         if webify {
             println!("`");
