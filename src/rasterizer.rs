@@ -32,7 +32,7 @@ pub fn render(context: &mut Context, shader: &Shader) {
         let character =
             shader.shader_to_char(&point.iter().map(|x| x.shade).collect::<Vec<f32>>()[..]);
         let shp = shader.precision();
-        let dominant_color = match point[shp / 2].color {
+        let dominant_color = match point[(shp * shp) / 2].color {
             Some(c) => c,
             None => point
                 .iter()
@@ -59,8 +59,8 @@ pub fn draw_triangle(
     dist_triangle.mul(context.utransform * transform);
     let aabb = dist_triangle.aabb(); // Calculate triangle bounds
     let mins: (usize, usize) = (
-        aabb.min[0].max(1.0).ceil() as usize,
-        aabb.min[1].max(1.0).ceil() as usize,
+        aabb.min[0].max(1.0).floor() as usize,
+        aabb.min[1].max(1.0).floor() as usize,
     );
     let maxs: (usize, usize) = (
         (aabb.max[0] * 2.0).min((context.width - 1) as f32).ceil() as usize,
