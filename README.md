@@ -1,5 +1,7 @@
 # sloth - A one-of-a-kind Rust 3D Renderer for the CLI
-![pikachu](models/demo/pikachu.gif)
+![pikachu_ascii](models/demo/pikachu_ascii.gif)
+
+![pikachu_unicode](models/demo/pikachu_unicode.gif)
   
 A one-of-a-kind command line 3D software rasterizer made with termion, tobj, and nalgebra. Currently it 
 supports OBJ file formats without textures. It also supports OBJ file formats with vertex colors.
@@ -15,6 +17,10 @@ You can replace `sloth <args>` with `cargo run --release -- <args>` anywhere
 #### Render pikachu
 ```
 sloth models/Pikachu.obj
+```
+#### Use the unicode shader
+```
+sloth models/Pikachu.obj -s unicode
 ```
 #### For multiple models:   
 ```
