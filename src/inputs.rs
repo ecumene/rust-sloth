@@ -1,10 +1,26 @@
-use crate::context::Context;
 use crate::geometry::{SimpleMesh, ToSimpleMesh, ToSimpleMeshWithMaterial};
-use crate::Shader;
 use clap::{App, Arg, ArgMatches, SubCommand};
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::path::Path;
+use std::time::Duration;
+
+// config struct containing the set of variables passed to the application
+pub struct SlothConfig {
+    pub fps_cap: f64,
+    pub target_frame_time: Duration,
+    pub mesh_queue: Vec<SimpleMesh>,
+    pub turntable: (f32, f32, f32, f32),
+    pub no_color: bool,
+    pub image_config: Option<ImageConfig>,
+}
+
+pub struct ImageConfig {
+    pub width: u16,
+    pub height: u16,
+    pub webify: bool,
+    pub webify_todo_frames: usize,
+}
 
 pub fn cli_matches<'a>() -> ArgMatches<'a> {
     commands_for_subcommands(
@@ -162,24 +178,4 @@ pub fn match_image_mode(matches: &ArgMatches) -> bool {
 
 pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
     matches.is_present("no color")
-}
-
-pub fn match_shader(matches: &ArgMatches) -> Shader {
-    match matches.value_of("shader") {
-        Some("unicode") => Shader::new_unicode(),
-        Some(_) => Shader::Simple,
-        None => Shader::Simple,
-    }
-}
-
-pub fn match_dimensions(context: &mut Context, matches: &ArgMatches) -> Result<(), Box<dyn Error>> {
-    if let Some(x) = matches.value_of("width") {
-        context.width = x.parse()?;
-        if let Some(y) = matches.value_of("height") {
-            context.height = y.parse()?;
-        } else {
-            context.height = context.width;
-        }
-    }
-    Ok(())
 }

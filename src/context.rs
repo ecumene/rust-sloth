@@ -9,24 +9,34 @@ use std::error::Error;
 use std::f32;
 use std::io::stdout;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Pixel {
     pub z: f32,
     pub shade: f32,
     pub color: Option<(u8, u8, u8)>,
 }
 
-pub struct Context {
+impl Pixel {
+    pub fn blank() -> Self {
+        Self {
+            z: f32::MAX,
+            shade: 0.0,
+            color: None,
+        }
+    }
+}
+
+pub struct Context<const N: usize> {
     pub utransform: Matrix4<f32>,
     pub width: usize,
     pub height: usize,
     pub frame_buffer: Vec<(char, (u8, u8, u8))>,
-    pub shader_buffer: Vec<Vec<Pixel>>,
+    pub shader_buffer: Vec<[Pixel; N]>,
     pub image: bool,
 }
 
-impl Context {
-    pub fn blank(image: bool) -> Context {
+impl<const N: usize> Context<N> {
+    pub fn blank(image: bool) -> Context<N> {
         //TODO: Make this a constant struct
         Context {
             utransform: Matrix4::new(
@@ -34,26 +44,35 @@ impl Context {
             ),
             width: 0,
             height: 0,
-            frame_buffer: vec![],
-            shader_buffer: vec![],
+            frame_buffer: vec![(' ', (0, 0, 0)); 0],
+            shader_buffer: vec![[Pixel::blank(); N]; 0],
             image,
         }
     }
-    pub fn clear(&mut self) {
-        self.frame_buffer = vec![
-            (' ', (0, 0, 0));
-            if self.image {
-                self.width * self.height + self.height
-            } else {
-                self.width * self.height
-            } as usize
-        ];
-        self.shader_buffer = vec![vec![]; self.width * self.height as usize]; //f32::MAX is written to the z-buffer as an infinite back-wall to render with
+
+    pub fn set_size(&mut self, width: usize, height: usize) {
+        self.width = width;
+        self.height = height;
     }
+
+    fn buffer_size(&self) -> usize {
+        if self.image {
+            self.width * self.height + self.height
+        } else {
+            self.width * self.height
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.frame_buffer = vec![(' ', (0, 0, 0)); self.buffer_size()];
+        self.shader_buffer = vec![[Pixel::blank(); N]; self.buffer_size() - self.height];
+    }
+
     pub fn camera(&mut self, proj: Matrix4<f32>, view: Matrix4<f32>) -> &Matrix4<f32> {
         self.utransform = proj * view;
         &self.utransform
     }
+
     pub fn flush(&self, color: bool, webify: bool) -> Result<(), Box<dyn Error>> {
         let mut stdout = stdout();
 
@@ -101,14 +120,14 @@ impl Context {
         &mut self,
         mut old_size: (u16, u16),
         meshes: &[SimpleMesh],
-    ) -> Result<(), Box<dyn Error>> {
+    ) -> Result<(u16, u16), Box<dyn Error>> {
         let terminal_size = if self.image {
             (self.width as u16, self.height as u16)
         } else {
             terminal::size()?
         };
 
-        if old_size != terminal_size {
+        if old_size != terminal_size || self.image {
             old_size = terminal_size; // It changed! Set new size
             let mut scale: f32 = 0.0; // The scene's scale
             for mesh in meshes {
@@ -144,6 +163,6 @@ impl Context {
             }
         }
 
-        Ok(())
+        Ok(terminal_size)
     }
 }
