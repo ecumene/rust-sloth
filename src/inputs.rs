@@ -71,15 +71,17 @@ pub fn cli_matches<'a>() -> ArgMatches<'a> {
                     .takes_value(true),
             )
             .arg(
-                Arg::with_name("zoom")
-                    .long("zoom")
-                    .short("z")
+                Arg::with_name("magnification")
+                    .long("magnification")
+                    .help("Set the order of maginification towards the object")
+                    .short("m")
                     .required(false)
                     .takes_value(true),
             )
             .arg(
                 Arg::with_name("background color")
                     .long("bg-color")
+                    .help("Set the background color in RGB values")
                     .short("c")
                     .number_of_values(3)
                     .required(false)
@@ -198,7 +200,7 @@ pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
 }
 
 pub fn match_zoom(matches: &ArgMatches) -> Result<f32, Box<dyn Error>> {
-    match matches.value_of("zoom") {
+    match matches.value_of("magnification") {
         Some(v) => Ok(v.parse()?),
         None => Ok(1.0),
     }
