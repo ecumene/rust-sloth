@@ -11,6 +11,8 @@ pub struct SlothConfig {
     pub target_frame_time: Duration,
     pub mesh_queue: Vec<SimpleMesh>,
     pub turntable: (f32, f32, f32, f32),
+    pub zoom: f32,
+    pub bg_color: (u8, u8, u8),
     pub no_color: bool,
     pub image_config: Option<ImageConfig>,
 }
@@ -65,6 +67,21 @@ pub fn cli_matches<'a>() -> ArgMatches<'a> {
                     .long("shader")
                     .short("s")
                     .possible_values(&["unicode"])
+                    .required(false)
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::with_name("zoom")
+                    .long("zoom")
+                    .short("z")
+                    .required(false)
+                    .takes_value(true),
+            )
+            .arg(
+                Arg::with_name("background color")
+                    .long("bg-color")
+                    .short("c")
+                    .number_of_values(3)
                     .required(false)
                     .takes_value(true),
             ),
@@ -178,4 +195,22 @@ pub fn match_image_mode(matches: &ArgMatches) -> bool {
 
 pub fn match_no_color_mode(matches: &ArgMatches) -> bool {
     matches.is_present("no color")
+}
+
+pub fn match_zoom(matches: &ArgMatches) -> Result<f32, Box<dyn Error>> {
+    match matches.value_of("zoom") {
+        Some(v) => Ok(v.parse()?),
+        None => Ok(1.0),
+    }
+}
+
+pub fn match_bg_color(matches: &ArgMatches) -> Result<(u8, u8, u8), Box<dyn Error>> {
+    match matches.values_of("background color") {
+        Some(mut v) => Ok((
+            v.next().unwrap().parse()?,
+            v.next().unwrap().parse()?,
+            v.next().unwrap().parse()?,
+        )),
+        None => Ok((25, 25, 25)),
+    }
 }

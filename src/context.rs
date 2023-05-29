@@ -30,13 +30,14 @@ pub struct Context<const N: usize> {
     pub utransform: Matrix4<f32>,
     pub width: usize,
     pub height: usize,
+    pub zoom: f32,
     pub frame_buffer: Vec<(char, (u8, u8, u8))>,
     pub shader_buffer: Vec<[Pixel; N]>,
     pub image: bool,
 }
 
 impl<const N: usize> Context<N> {
-    pub fn blank(image: bool) -> Context<N> {
+    pub fn blank(image: bool, zoom: f32) -> Context<N> {
         //TODO: Make this a constant struct
         Context {
             utransform: Matrix4::new(
@@ -44,6 +45,7 @@ impl<const N: usize> Context<N> {
             ),
             width: 0,
             height: 0,
+            zoom,
             frame_buffer: vec![(' ', (0, 0, 0)); 0],
             shader_buffer: vec![[Pixel::blank(); N]; 0],
             image,
@@ -73,7 +75,12 @@ impl<const N: usize> Context<N> {
         &self.utransform
     }
 
-    pub fn flush(&self, color: bool, webify: bool) -> Result<(), Box<dyn Error>> {
+    pub fn flush(
+        &self,
+        color: bool,
+        webify: bool,
+        bg_color: (u8, u8, u8),
+    ) -> Result<(), Box<dyn Error>> {
         let mut stdout = stdout();
 
         if !self.image {
@@ -94,9 +101,9 @@ impl<const N: usize> Context<N> {
                             b: (pixel.1).2,
                         })
                         .on(Color::Rgb {
-                            r: 25,
-                            g: 25,
-                            b: 25,
+                            r: bg_color.0,
+                            g: bg_color.1,
+                            b: bg_color.2,
                         });
                     stdout.queue(PrintStyledContent(styled))?;
                 }
@@ -137,7 +144,8 @@ impl<const N: usize> Context<N> {
                     .max(mesh.bounding_box.max.y)
                     .max(mesh.bounding_box.max.z);
             }
-            scale = f32::from(old_size.1).min(f32::from(old_size.0) / 2.0) / scale / 2.0; // Constrain to width and height, whichever is smaller
+            scale =
+                f32::from(old_size.1).min(f32::from(old_size.0) / 2.0) * self.zoom / scale / 2.0; // Constrain to width and height, whichever is smaller
             let t = Matrix4::new(
                 scale,
                 0.0,

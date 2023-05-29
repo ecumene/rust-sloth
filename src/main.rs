@@ -28,6 +28,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let image_mode = match_image_mode(&matches);
     let mut image_config = None;
     let mut turntable = match_turntable(&matches)?;
+    let bg_color = match_bg_color(&matches)?;
+    let zoom = match_zoom(&matches)?;
     let mut stdout = stdout();
     if image_mode {
         if let Some(matches) = matches.subcommand_matches("image") {
@@ -53,6 +55,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         target_frame_time: Duration::from_secs_f64(1.0 / fps_cap),
         mesh_queue: match_meshes(&matches)?,
         turntable,
+        zoom,
+        bg_color,
         no_color: match_no_color_mode(&matches),
         image_config,
     };
@@ -84,7 +88,7 @@ fn run<const N: usize, T: Shader<N>>(
             turntable.3 = (2.0 * f32::consts::PI) * (1.0 / ic.webify_todo_frames as f32);
         }
     }
-    let mut context: Context<N> = Context::blank(image_mode); // The context holds the frame+z buffer, and the width and height
+    let mut context: Context<N> = Context::blank(image_mode, config.zoom); // The context holds the frame+z buffer, and the width and height
     context.set_size(size.0 as usize, size.1 as usize);
     let mut last_time; // Used in the variable time step
     loop {
@@ -117,7 +121,7 @@ fn run<const N: usize, T: Shader<N>>(
             println!("`");
         }
 
-        context.flush(!config.no_color, webify)?; // This prints all framebuffer info
+        context.flush(!config.no_color, webify, config.bg_color)?; // This prints all framebuffer info
         stdout.flush()?;
         let dt = Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
         turntable.1 += if webify {
