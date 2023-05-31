@@ -1,14 +1,19 @@
 mod rasterizer;
 
-use std::path::PathBuf;
-use std::error::Error;
+use clap::{Parser, Subcommand, ValueEnum};
 use glam::*;
-use tobj;
-use std::fs::OpenOptions;
-use clap::{Parser, Subcommand};
 use rasterizer::*;
+use std::error::Error;
+use std::fs::OpenOptions;
+use std::path::PathBuf;
+use tobj;
 
-pub fn to_meshes(present: (Vec<tobj::Model>, Result<Vec<tobj::Material>, tobj::LoadError>)) -> Vec<SimpleMesh> {
+pub fn to_meshes(
+    present: (
+        Vec<tobj::Model>,
+        Result<Vec<tobj::Material>, tobj::LoadError>,
+    ),
+) -> Vec<SimpleMesh> {
     let models = present.0;
     let materials = present.1.expect("couldn't load materials");
     let mut meshes: Vec<SimpleMesh> = vec![];
@@ -30,7 +35,13 @@ enum Mode {
     Turntable {
         #[arg(short, long, required = false)]
         speed: f32,
-    }
+    },
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum ShaderOptions {
+    Simple,
+    Unicode,
 }
 
 #[derive(Parser, Debug)]
@@ -39,20 +50,25 @@ struct Args {
     #[arg(short, long, required = false)]
     file_name: PathBuf,
 
+    #[arg(short, long)]
+    shader: ShaderOptions,
+
     #[command(subcommand)]
     mode: Option<Mode>,
 }
 
-fn main() -> Result<(), Box<dyn Error>>  {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    // TODO: Image + Turntable
-    let mut context = Rasterizer::new(40, 40);
-
     let error = |s: &str, e: &str| -> Result<Vec<SimpleMesh>, Box<dyn Error>> {
-        Err(format!("filename: [{}] couldn't load, {}. {}", args.file_name.display(), s, e).into())
+        Err(format!(
+            "filename: [{}] couldn't load, {}. {}",
+            args.file_name.display(),
+            s,
+            e
+        )
+        .into())
     };
-
 
     let meshes = match args.file_name.extension() {
         None => error("couldn't determine filename extension", ""),
@@ -75,11 +91,23 @@ fn main() -> Result<(), Box<dyn Error>>  {
         },
     }?;
 
-    context.update(&meshes)?;
+    // TODO: Image + Turntable
+
+    match args.shader {
+        ShaderOptions::Unicode => Ok(run(UnicodeShader::new(), &meshes)?),
+        ShaderOptions::Simple => Ok(run(SimpleShader::new(), &meshes)?),
+    }
+}
+
+fn run<const N: usize, S: Shader<N>>(
+    shader: S,
+    meshes: &Vec<SimpleMesh>,
+) -> Result<(), Box<dyn Error>> {
+    let mut context = Rasterizer::new(&meshes);
     let transform = Mat4::IDENTITY;
-    context.draw_all(transform, meshes)?;
-
-    context.flush()?;
-
+    let mut frame = Frame::blank(60, 30);
+    context.draw_all(&mut frame, transform)?;
+    context.render(&mut frame, shader);
+    frame.flush()?;
     Ok(())
 }
