@@ -183,8 +183,10 @@ impl<'a> Rasterizer<'a> {
         }
     }
 
-    pub fn scale_to_fit(&mut self, width: f32, height: f32) -> Result<(), Box<dyn Error>> {
+    pub fn scale_to_fit<const N: usize>(&mut self, frame: &Frame<N>) -> Result<(), Box<dyn Error>> {
         let mut scale: f32 = 0.0;
+        let height = frame.width as f32;
+        let width = frame.width as f32;
         for mesh in self.meshes {
             scale = scale
                 .max(mesh.bounding_box.max.x)
