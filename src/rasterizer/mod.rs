@@ -185,8 +185,8 @@ impl<'a> Rasterizer<'a> {
 
     pub fn scale_to_fit<const N: usize>(&mut self, frame: &Frame<N>) -> Result<(), Box<dyn Error>> {
         let mut scale: f32 = 0.0;
-        let height = frame.width as f32;
         let width = frame.width as f32;
+        let height = frame.height as f32;
         for mesh in self.meshes {
             scale = scale
                 .max(mesh.bounding_box.max.x)
@@ -194,7 +194,7 @@ impl<'a> Rasterizer<'a> {
                 .max(mesh.bounding_box.max.z);
         }
 
-        scale = f32::from(height).min(f32::from(width) / 2.0) / scale / 2.0;
+        scale = height.min(width / 2.0) / scale / 2.0;
 
         self.utransform = Mat4::from_translation(Vec3::new(width / 4.0, height / 2.0, 0.0))
             * Mat4::from_rotation_y(std::f32::consts::PI)

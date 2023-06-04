@@ -1,6 +1,6 @@
 mod rasterizer;
 
-use clap::{Parser, Subcommand, ValueEnum};
+use clap::{ArgAction, Parser, Subcommand, ValueEnum};
 use glam::*;
 use rasterizer::*;
 use std::error::Error;
@@ -45,13 +45,16 @@ enum ShaderOptions {
 }
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, disable_help_flag = true)]
 struct Args {
     #[arg(short, long, required = false)]
     file_name: PathBuf,
 
     #[arg(short, long)]
     shader: ShaderOptions,
+
+    #[arg(long, action = ArgAction::Help, value_parser = clap::value_parser!(bool))]
+    help: (),
 
     #[command(subcommand)]
     mode: Option<Mode>,
@@ -106,7 +109,7 @@ fn run<const N: usize, S: Shader<N>>(
     let mut context = Rasterizer::new(&meshes);
     let transform = Mat4::IDENTITY;
     let mut frame = Frame::blank(60, 30);
-    context.scale_to_fit(&frame);
+    context.scale_to_fit(&frame)?;
     context.draw_all(&mut frame, transform)?;
     context.render(&mut frame, shader);
     frame.flush()?;
