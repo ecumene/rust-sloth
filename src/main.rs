@@ -106,6 +106,7 @@ fn run<const N: usize, S: Shader<N>>(
     let mut context = Rasterizer::new(&meshes);
     let transform = Mat4::IDENTITY;
     let mut frame = Frame::blank(60, 30);
+    context.scale_to_fit(60.0, 30.0);
     context.draw_all(&mut frame, transform)?;
     context.render(&mut frame, shader);
     frame.flush()?;
