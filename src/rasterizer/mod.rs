@@ -1,7 +1,9 @@
 mod geom;
 
+use crossterm::style::Color;
 use crossterm::style::PrintStyledContent;
 use crossterm::style::Stylize;
+use crossterm::terminal;
 use crossterm::QueueableCommand;
 use std::error::Error;
 
@@ -50,7 +52,6 @@ fn orient_triangle(triangle: &Triangle) -> f32 {
 pub struct Rasterizer<'a> {
     pub utransform: Mat4,
     pub meshes: &'a Vec<SimpleMesh>,
-    pub pixel_width: usize,
 }
 
 pub struct Frame<const N: usize> {
@@ -60,14 +61,14 @@ pub struct Frame<const N: usize> {
     pub shader_buffer: Shaderbuffer<N>,
 }
 
-fn flush_charxel(charxel: (char, (u8, u8, u8)), stdout: &mut std::io::Stdout) {
+fn flush_charxel(charxel: (char, (u8, u8, u8)), bg_color: Color, stdout: &mut std::io::Stdout) {
     let styled = crossterm::style::style(charxel.0)
         .with(crossterm::style::Color::Rgb {
             r: charxel.1 .0,
             g: charxel.1 .1,
             b: charxel.1 .2,
         })
-        .on(crossterm::style::Color::Black);
+        .on(bg_color);
     stdout.queue(PrintStyledContent(styled)).unwrap();
 }
 
@@ -81,24 +82,30 @@ impl<const N: usize> Frame<N> {
         }
     }
 
+    pub fn blank_fit_to_terminal() -> Result<Frame<N>, Box<dyn Error>> {
+        let size = terminal::size()?;
+        let width = size.0 as usize;
+        let height = size.1 as usize;
+        Ok(Self::blank(width, height))
+    }
+
     pub fn clear(&mut self) {
         self.frame_buffer = vec![(' ', (0, 0, 0)); self.width * self.height];
         self.shader_buffer = vec![[Pixel::blank(); N]; self.width * self.height as usize];
         //f32::MAX is written to the z-buffer as an infinite back-wall to render with
     }
 
-    pub fn flush(&self) -> Result<(), Box<dyn Error>> {
+    pub fn flush(&self, bg_color: Color, newlines: bool) -> Result<(), Box<dyn Error>> {
         let mut stdout = stdout();
-        let pixel_width = 1;
 
         for y in 0..self.height {
             for x in 0..self.width {
                 let index = x + y * self.width;
-                for _ in 0..pixel_width {
-                    flush_charxel(self.frame_buffer[index], &mut stdout)
-                }
+                flush_charxel(self.frame_buffer[index], bg_color, &mut stdout)
             }
-            println!();
+            if newlines {
+                println!();
+            }
         }
 
         stdout.flush()?;
@@ -106,6 +113,7 @@ impl<const N: usize> Frame<N> {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn fill(&mut self, charxel: (char, (u8, u8, u8))) {
         for pixel in &mut self.frame_buffer {
             *pixel = charxel;
@@ -179,7 +187,6 @@ impl<'a> Rasterizer<'a> {
         Rasterizer {
             utransform: Mat4::IDENTITY,
             meshes,
-            pixel_width: 1,
         }
     }
 
@@ -203,6 +210,10 @@ impl<'a> Rasterizer<'a> {
         Ok(())
     }
 
+    pub fn apply_transform(&mut self, transform: Mat4) {
+        self.utransform *= transform;
+    }
+
     pub fn draw_all<const N: usize>(
         self: &Rasterizer<'a>,
         frame: &mut Frame<N>,
@@ -217,7 +228,7 @@ impl<'a> Rasterizer<'a> {
         Ok(())
     }
 
-    pub fn render<const N: usize, S: Shader<N>>(&self, context: &mut Frame<N>, shader: S) {
+    pub fn render<const N: usize, S: Shader<N>>(&self, context: &mut Frame<N>, shader: &S) {
         for (i, point) in context.shader_buffer.iter().enumerate() {
             let character = shader.shade_to_char(&point.map(|x| x.shade));
             let dominant_color = match point[N / 2].color {
@@ -242,12 +253,12 @@ impl<'a> Rasterizer<'a> {
 use tui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Color, Style},
+    style::{Color as TuiColor, Style},
     widgets::Widget,
 };
 
 #[cfg(feature = "tui-widget")]
-impl<'a> Widget for Frame {
+impl<'a, const N: usize> Widget for Frame<N> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         for y in 0..self.height {
             for x in 0..self.width {
@@ -255,8 +266,11 @@ impl<'a> Widget for Frame {
                 for o in 0..pixel_width {
                     let index = x + y * self.width;
                     let charxel = self.frame_buffer[index];
-                    let style =
-                        Style::default().fg(Color::Rgb(charxel.1 .0, charxel.1 .1, charxel.1 .2));
+                    let style = Style::default().fg(TuiColor::Rgb(
+                        charxel.1 .0,
+                        charxel.1 .1,
+                        charxel.1 .2,
+                    ));
                     if x + o < self.width {
                         buf.get_mut(area.left() + x as u16 + o as u16, area.top() + y as u16)
                             .set_symbol(&charxel.0.to_string())

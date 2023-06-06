@@ -1,11 +1,16 @@
 mod rasterizer;
 
 use clap::{ArgAction, Parser, Subcommand, ValueEnum};
+use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::style::Color;
+use crossterm::{cursor, QueueableCommand};
 use glam::*;
 use rasterizer::*;
 use std::error::Error;
 use std::fs::OpenOptions;
+use std::io::stdout;
 use std::path::PathBuf;
+use std::time::{Duration, Instant};
 use tobj;
 
 pub fn to_meshes(
@@ -33,8 +38,8 @@ enum Mode {
         height: usize,
     },
     Turntable {
-        #[arg(short, long, required = false)]
-        speed: f32,
+        #[arg(short, long, num_args = 3, default_values = ["0", "50", "0"])]
+        rotation: Vec<f32>,
     },
 }
 
@@ -53,11 +58,14 @@ struct Args {
     #[arg(short, long)]
     shader: ShaderOptions,
 
+    #[arg(long, num_args = 3, default_values = ["20", "20", "20"])]
+    bg_color: Vec<u8>,
+
     #[arg(long, action = ArgAction::Help, value_parser = clap::value_parser!(bool))]
     help: (),
 
     #[command(subcommand)]
-    mode: Option<Mode>,
+    mode: Mode,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -96,22 +104,81 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // TODO: Image + Turntable
 
+    let bg_color = Color::Rgb {
+        r: args.bg_color[0],
+        g: args.bg_color[1],
+        b: args.bg_color[2],
+    };
+
+    let mode = args.mode;
+
     match args.shader {
-        ShaderOptions::Unicode => Ok(run(UnicodeShader::new(), &meshes)?),
-        ShaderOptions::Simple => Ok(run(SimpleShader::new(), &meshes)?),
+        ShaderOptions::Unicode => Ok(run(UnicodeShader::new(), &meshes, mode, bg_color)?),
+        ShaderOptions::Simple => Ok(run(SimpleShader::new(), &meshes, mode, bg_color)?),
     }
 }
 
 fn run<const N: usize, S: Shader<N>>(
     shader: S,
     meshes: &Vec<SimpleMesh>,
+    mode: Mode,
+    bg_color: Color,
 ) -> Result<(), Box<dyn Error>> {
     let mut context = Rasterizer::new(&meshes);
     let transform = Mat4::IDENTITY;
-    let mut frame = Frame::blank(60, 30);
+    let mut newlines = true;
+    let mut stdout = stdout().lock();
+    let mut frame = match mode {
+        Mode::Image { width, height } => Frame::blank(width, height),
+        Mode::Turntable { rotation: _ } => {
+            newlines = false;
+            crossterm::terminal::enable_raw_mode()?;
+            stdout.queue(cursor::Hide)?;
+            stdout.queue(cursor::MoveTo(0, 0))?;
+            Frame::blank_fit_to_terminal()?
+        }
+    };
     context.scale_to_fit(&frame)?;
-    context.draw_all(&mut frame, transform)?;
-    context.render(&mut frame, shader);
-    frame.flush()?;
+    loop {
+        let last_time = Instant::now();
+        context.draw_all(&mut frame, transform)?;
+        context.render(&mut frame, &shader);
+        frame.flush(bg_color, newlines)?;
+        match mode {
+            Mode::Image {
+                width: _,
+                height: _,
+            } => break,
+            Mode::Turntable { ref rotation } => {
+                if poll(Duration::from_millis(0))? {
+                    if let Event::Key(KeyEvent {
+                        code,
+                        modifiers,
+                        kind: _,
+                        state: _,
+                    }) = read()?
+                    {
+                        if code == KeyCode::Char('q')
+                            || (code == KeyCode::Char('c') && (modifiers == KeyModifiers::CONTROL))
+                        {
+                            stdout.queue(cursor::Show)?;
+                            crossterm::terminal::disable_raw_mode()?;
+                            break;
+                        }
+                    }
+                }
+                let dt =
+                    Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
+                let rot = Mat4::from_euler(
+                    EulerRot::XYZ,
+                    rotation[0] * dt,
+                    rotation[1] * dt,
+                    rotation[2] * dt,
+                );
+                context.apply_transform(rot);
+                stdout.queue(cursor::MoveTo(0, 0))?;
+            }
+        }
+    }
     Ok(())
 }

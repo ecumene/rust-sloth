@@ -20,7 +20,7 @@ name = "rendersloth"
 required-features = ["build-cli"]
 
 [dependencies]
-clap = { version = "4.1.8", features = ["derive"], optional = true }
+clap = { version = "4.3.2", features = ["derive"], optional = true }
 tui = { version = "0.19", optional = true }
 stl_io = "0.7"
 crossterm = "0.26.1"
