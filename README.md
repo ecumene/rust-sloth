@@ -33,15 +33,16 @@ for model in {
 
 let mut context = Rasterizer::new(&meshes);
 let mut frame = Frame::blank(50, 20);
+let shader = UnicodeShader::new();
 
 // Scale the camera to the model
-context.scale_to_fit(&frame)?;
+context.scale_to_fit(&frame, 1.0)?;
 
 // Draw the meshes to the context's built-in shaderbuffer, containing every pixel's shade value
 context.draw_all(&mut frame, Mat4::IDENTITY)?;
 
 // Convert the shaderbuffer into a framebuffer, containing ready to be flushed chars with color values
-context.render(&mut frame, &shader);
+frame.render(&shader);
 
 // Print the screen's contents
 frame.flush(crossterm::style::Color::Black, true)?;

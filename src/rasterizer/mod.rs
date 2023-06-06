@@ -180,6 +180,26 @@ impl<const N: usize> Frame<N> {
             self.draw_triangle(&triangle, transform);
         }
     }
+
+    pub fn render<S: Shader<N>>(self: &mut Frame<N>, shader: &S) {
+        for (i, point) in self.shader_buffer.iter().enumerate() {
+            let character = shader.shade_to_char(&point.map(|x| x.shade));
+            let dominant_color = match point[N / 2].color {
+                Some(c) => c,
+                None => point
+                    .iter()
+                    .max_by(|a, b| {
+                        a.shade
+                            .partial_cmp(&b.shade)
+                            .unwrap_or(std::cmp::Ordering::Less)
+                    })
+                    .unwrap()
+                    .color
+                    .unwrap_or((0, 0, 0)),
+            };
+            self.frame_buffer[i] = (character, dominant_color);
+        }
+    }
 }
 
 impl<'a> Rasterizer<'a> {
@@ -190,7 +210,11 @@ impl<'a> Rasterizer<'a> {
         }
     }
 
-    pub fn scale_to_fit<const N: usize>(&mut self, frame: &Frame<N>) -> Result<(), Box<dyn Error>> {
+    pub fn scale_to_fit<const N: usize>(
+        &mut self,
+        frame: &Frame<N>,
+        zoom: f32,
+    ) -> Result<(), Box<dyn Error>> {
         let mut scale: f32 = 0.0;
         let width = frame.width as f32;
         let height = frame.height as f32;
@@ -201,7 +225,7 @@ impl<'a> Rasterizer<'a> {
                 .max(mesh.bounding_box.max.z);
         }
 
-        scale = height.min(width / 2.0) / scale / 2.0;
+        scale = height.min(width / 2.0) * zoom / scale / 2.0;
 
         self.utransform = Mat4::from_translation(Vec3::new(width / 4.0, height / 2.0, 0.0))
             * Mat4::from_rotation_y(std::f32::consts::PI)
@@ -226,26 +250,6 @@ impl<'a> Rasterizer<'a> {
         }
 
         Ok(())
-    }
-
-    pub fn render<const N: usize, S: Shader<N>>(&self, context: &mut Frame<N>, shader: &S) {
-        for (i, point) in context.shader_buffer.iter().enumerate() {
-            let character = shader.shade_to_char(&point.map(|x| x.shade));
-            let dominant_color = match point[N / 2].color {
-                Some(c) => c,
-                None => point
-                    .iter()
-                    .max_by(|a, b| {
-                        a.shade
-                            .partial_cmp(&b.shade)
-                            .unwrap_or(std::cmp::Ordering::Less)
-                    })
-                    .unwrap()
-                    .color
-                    .unwrap_or((0, 0, 0)),
-            };
-            context.frame_buffer[i] = (character, dominant_color);
-        }
     }
 }
 

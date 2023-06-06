@@ -64,6 +64,9 @@ struct Args {
     #[arg(long, action = ArgAction::Help, value_parser = clap::value_parser!(bool))]
     help: (),
 
+    #[arg(long, short, default_value = "1")]
+    zoom: f32,
+
     #[command(subcommand)]
     mode: Mode,
 }
@@ -101,20 +104,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             },
         },
     }?;
-
-    // TODO: Image + Turntable
-
     let bg_color = Color::Rgb {
         r: args.bg_color[0],
         g: args.bg_color[1],
         b: args.bg_color[2],
     };
-
     let mode = args.mode;
-
+    let zoom = args.zoom;
     match args.shader {
-        ShaderOptions::Unicode => Ok(run(UnicodeShader::new(), &meshes, mode, bg_color)?),
-        ShaderOptions::Simple => Ok(run(SimpleShader::new(), &meshes, mode, bg_color)?),
+        ShaderOptions::Unicode => Ok(run(UnicodeShader::new(), &meshes, mode, bg_color, zoom)?),
+        ShaderOptions::Simple => Ok(run(SimpleShader::new(), &meshes, mode, bg_color, zoom)?),
     }
 }
 
@@ -123,6 +122,7 @@ fn run<const N: usize, S: Shader<N>>(
     meshes: &Vec<SimpleMesh>,
     mode: Mode,
     bg_color: Color,
+    zoom: f32,
 ) -> Result<(), Box<dyn Error>> {
     let mut context = Rasterizer::new(&meshes);
     let transform = Mat4::IDENTITY;
@@ -138,11 +138,11 @@ fn run<const N: usize, S: Shader<N>>(
             Frame::blank_fit_to_terminal()?
         }
     };
-    context.scale_to_fit(&frame)?;
+    context.scale_to_fit(&frame, zoom)?;
     loop {
         let last_time = Instant::now();
         context.draw_all(&mut frame, transform)?;
-        context.render(&mut frame, &shader);
+        frame.render(&shader);
         frame.flush(bg_color, newlines)?;
         match mode {
             Mode::Image {
