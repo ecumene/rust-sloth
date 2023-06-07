@@ -254,7 +254,7 @@ impl<'a> Rasterizer<'a> {
 }
 
 #[cfg(feature = "tui-widget")]
-use tui::{
+use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::{Color as TuiColor, Style},
