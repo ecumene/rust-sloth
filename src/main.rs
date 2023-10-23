@@ -1,14 +1,24 @@
 mod rasterizer;
 
-use std::path::PathBuf;
-use std::error::Error;
+use clap::{ArgAction, Parser, Subcommand, ValueEnum};
+use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::style::Color;
+use crossterm::{cursor, QueueableCommand};
 use glam::*;
-use tobj;
-use std::fs::OpenOptions;
-use clap::{Parser, Subcommand};
 use rasterizer::*;
+use std::error::Error;
+use std::fs::OpenOptions;
+use std::io::stdout;
+use std::path::PathBuf;
+use std::time::{Duration, Instant};
+use tobj;
 
-pub fn to_meshes(present: (Vec<tobj::Model>, Result<Vec<tobj::Material>, tobj::LoadError>)) -> Vec<SimpleMesh> {
+pub fn to_meshes(
+    present: (
+        Vec<tobj::Model>,
+        Result<Vec<tobj::Material>, tobj::LoadError>,
+    ),
+) -> Vec<SimpleMesh> {
     let models = present.0;
     let materials = present.1.expect("couldn't load materials");
     let mut meshes: Vec<SimpleMesh> = vec![];
@@ -28,31 +38,51 @@ enum Mode {
         height: usize,
     },
     Turntable {
-        #[arg(short, long, required = false)]
-        speed: f32,
-    }
+        #[arg(short, long, num_args = 3, default_values = ["0", "50", "0"])]
+        rotation: Vec<f32>,
+    },
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum ShaderOptions {
+    Simple,
+    Unicode,
 }
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author, version, about, long_about = None, disable_help_flag = true)]
 struct Args {
     #[arg(short, long, required = false)]
     file_name: PathBuf,
 
+    #[arg(short, long)]
+    shader: ShaderOptions,
+
+    #[arg(long, num_args = 3, default_values = ["20", "20", "20"])]
+    bg_color: Vec<u8>,
+
+    #[arg(long, action = ArgAction::Help, value_parser = clap::value_parser!(bool))]
+    help: (),
+
+    #[arg(long, short, default_value = "1")]
+    zoom: f32,
+
     #[command(subcommand)]
-    mode: Option<Mode>,
+    mode: Mode,
 }
 
-fn main() -> Result<(), Box<dyn Error>>  {
+fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
-    // TODO: Image + Turntable
-    let mut context = Rasterizer::new(40, 40);
-
     let error = |s: &str, e: &str| -> Result<Vec<SimpleMesh>, Box<dyn Error>> {
-        Err(format!("filename: [{}] couldn't load, {}. {}", args.file_name.display(), s, e).into())
+        Err(format!(
+            "filename: [{}] couldn't load, {}. {}",
+            args.file_name.display(),
+            s,
+            e
+        )
+        .into())
     };
-
 
     let meshes = match args.file_name.extension() {
         None => error("couldn't determine filename extension", ""),
@@ -74,12 +104,81 @@ fn main() -> Result<(), Box<dyn Error>>  {
             },
         },
     }?;
+    let bg_color = Color::Rgb {
+        r: args.bg_color[0],
+        g: args.bg_color[1],
+        b: args.bg_color[2],
+    };
+    let mode = args.mode;
+    let zoom = args.zoom;
+    match args.shader {
+        ShaderOptions::Unicode => Ok(run(UnicodeShader::new(), &meshes, mode, bg_color, zoom)?),
+        ShaderOptions::Simple => Ok(run(SimpleShader::new(), &meshes, mode, bg_color, zoom)?),
+    }
+}
 
-    context.update(&meshes)?;
+fn run<const N: usize, S: Shader<N>>(
+    shader: S,
+    meshes: &Vec<SimpleMesh>,
+    mode: Mode,
+    bg_color: Color,
+    zoom: f32,
+) -> Result<(), Box<dyn Error>> {
+    let mut context = Rasterizer::new(&meshes);
     let transform = Mat4::IDENTITY;
-    context.draw_all(transform, meshes)?;
-
-    context.flush()?;
-
+    let mut newlines = true;
+    let mut stdout = stdout().lock();
+    let mut frame = match mode {
+        Mode::Image { width, height } => Frame::blank(width, height),
+        Mode::Turntable { rotation: _ } => {
+            newlines = false;
+            crossterm::terminal::enable_raw_mode()?;
+            stdout.queue(cursor::Hide)?;
+            stdout.queue(cursor::MoveTo(0, 0))?;
+            Frame::blank_fit_to_terminal()?
+        }
+    };
+    context.scale_to_fit(&frame, zoom)?;
+    loop {
+        let last_time = Instant::now();
+        context.draw_all(&mut frame, transform)?;
+        frame.render(&shader);
+        frame.flush(bg_color, newlines)?;
+        match mode {
+            Mode::Image {
+                width: _,
+                height: _,
+            } => break,
+            Mode::Turntable { ref rotation } => {
+                if poll(Duration::from_millis(0))? {
+                    if let Event::Key(KeyEvent {
+                        code,
+                        modifiers,
+                        kind: _,
+                        state: _,
+                    }) = read()?
+                    {
+                        if code == KeyCode::Char('q')
+                            || (code == KeyCode::Char('c') && (modifiers == KeyModifiers::CONTROL))
+                        {
+                            stdout.queue(cursor::Show)?;
+                            crossterm::terminal::disable_raw_mode()?;
+                            break;
+                        }
+                    }
+                }
+                let dt =
+                    Instant::now().duration_since(last_time).as_nanos() as f32 / 1_000_000_000.0;
+                let rot = Mat4::from_euler(
+                    EulerRot::XYZ,
+                    rotation[0] * dt,
+                    rotation[1] * dt,
+                    rotation[2] * dt,
+                );
+                context.apply_transform(rot);
+                stdout.queue(cursor::MoveTo(0, 0))?;
+            }
+        }
+    }
     Ok(())
 }
