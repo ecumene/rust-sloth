@@ -33,4 +33,4 @@ Thank you, contributors!
 ---
 [Maxgy](https://github.com/Maxgy) – Rustfmt lint
 [donbright](https://github.com/donbright) – STL model loading added, Rustfmt lint
-[jonathandturner](https://github.com/jonathandturner) – Crossterm port
+[sophiajt](https://github.com/sophiajt) – Crossterm port
